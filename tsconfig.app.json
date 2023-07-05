@@ -8,5 +8,5 @@
     "sourceMap": true,
     "strict": true
   },
-  "include": ["app/**/*"]
+  "include": ["src/lib/server/**/*"]
 }
