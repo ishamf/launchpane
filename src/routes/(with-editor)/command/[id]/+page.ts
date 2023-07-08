@@ -1,5 +1,7 @@
-export function load({ params }) {
+import { appAPI } from '$lib/api';
+
+export function load({ params, depends }) {
   return {
-    command: electronAPI.getCommand(parseInt(params.id)),
+    command: appAPI(depends).getCommand(parseInt(params.id)),
   };
 }

@@ -4,6 +4,7 @@
   import type { LayoutData } from './$types';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { appAPI } from '$lib/api';
 
   export let data: LayoutData;
 
@@ -11,14 +12,12 @@
 
   $: isEditing = windowState === WindowState.Editing;
 
-  $: console.log(windowState);
-
   $: {
-    electronAPI.setWindowState(windowState);
+    appAPI().setWindowState(windowState);
   }
 
   async function onAdd() {
-    const command = await electronAPI.addCommand({
+    const command = await appAPI().addCommand({
       name: '',
       command: '',
       cwd: '',

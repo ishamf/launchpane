@@ -42,6 +42,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@prisma/client": "4.16.2"
+    "@prisma/client": "4.16.2",
+    "devalue": "^4.3.2"
   }
 }

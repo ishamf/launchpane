@@ -1,22 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Database } from './Database';
-import type { WindowState } from '../types';
 
 const exposedCommands = {
-  getCommands: ((...args: any[]) =>
-    ipcRenderer.invoke('command:getCommands', ...args)) as typeof Database.prototype.getCommands,
-  addCommand: ((...args: any[]) =>
-    ipcRenderer.invoke('command:addCommand', ...args)) as typeof Database.prototype.addCommand,
-  getCommand: ((...args: any[]) =>
-    ipcRenderer.invoke('command:getCommand', ...args)) as typeof Database.prototype.getCommand,
-  updateCommand: ((...args: any[]) =>
-    ipcRenderer.invoke(
-      'command:updateCommand',
-      ...args,
-    )) as typeof Database.prototype.updateCommand,
-
-  setWindowState: (state: WindowState) => ipcRenderer.invoke('window:setWindowState', state),
+  invokeProxiedFunction: async (command: string, ...args: any[]): Promise<any> => {
+    return ipcRenderer.invoke('invokeProxiedFunction', command, ...args);
+  },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', exposedCommands);
