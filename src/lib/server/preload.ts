@@ -8,6 +8,8 @@ const exposedCommands = {
     ipcRenderer.invoke('command:getCommands', ...args)) as typeof Database.prototype.getCommands,
   addCommand: ((...args: any[]) =>
     ipcRenderer.invoke('command:addCommand', ...args)) as typeof Database.prototype.addCommand,
+  getCommand: ((...args: any[]) =>
+    ipcRenderer.invoke('command:getCommand', ...args)) as typeof Database.prototype.getCommand,
   updateCommand: ((...args: any[]) =>
     ipcRenderer.invoke(
       'command:updateCommand',
