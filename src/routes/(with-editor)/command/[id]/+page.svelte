@@ -23,11 +23,12 @@
 
 <div style="grid-area: edit-top" class="flex flex-row items-center gap-4 px-4">
   <Button icon="arrowLeft" title="Back" href="/" />
-  <div class="flex-1" class:font-mono={showCommandTitleWithMonospace(command)}>
+  <div class="flex-1">
     <TextInput
       bind:value={command.name}
       on:blur={saveChanges}
       placeholder={getCommandDescriptor(command)}
+      monospace={showCommandTitleWithMonospace(command)}
     />
   </div>
   <Button
@@ -46,16 +47,26 @@
     <div class="w-12 h-12 p-2">
       <Icon icon="folder" title="Directory" />
     </div>
-    <div class="flex-1 font-mono">
-      <TextInput bind:value={command.cwd} on:blur={saveChanges} placeholder={'Working directory'} />
+    <div class="flex-1">
+      <TextInput
+        bind:value={command.cwd}
+        on:blur={saveChanges}
+        placeholder={'Working directory'}
+        monospace
+      />
     </div>
   </div>
   <div class="flex flex-row items-center gap-4 px-4 h-12">
     <div class="w-12 h-12 p-2">
       <Icon icon="console" title="Command" />
     </div>
-    <div class="flex-1 font-mono">
-      <TextInput bind:value={command.command} on:blur={saveChanges} placeholder={'Command'} />
+    <div class="flex-1">
+      <TextInput
+        bind:value={command.command}
+        on:blur={saveChanges}
+        placeholder={'Command'}
+        monospace
+      />
     </div>
   </div>
 </div>

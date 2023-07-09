@@ -10,5 +10,5 @@ export function getCommandDescriptor(command: CommandObject) {
 }
 
 export function showCommandTitleWithMonospace(command: CommandObject) {
-  return command.command && !command.name;
+  return !!(command.command && !command.name);
 }
