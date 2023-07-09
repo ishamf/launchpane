@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import { join } from 'path';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as API from './api';

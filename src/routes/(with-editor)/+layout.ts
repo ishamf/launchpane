@@ -1,7 +1,7 @@
-import { WindowState } from "$lib/types";
+import { WindowState } from '$lib/types';
 
 export function load() {
-    return {
-        windowState: WindowState.Editing
-    }
+  return {
+    windowState: WindowState.Editing,
+  };
 }

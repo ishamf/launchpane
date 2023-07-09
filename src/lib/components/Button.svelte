@@ -4,16 +4,17 @@
 
   export let icon: keyof typeof icons;
   export let title: string;
-  export let href: string | undefined = undefined
+  export let href: string | undefined = undefined;
 
-  $: isLink = typeof href ==='string'
+  $: isLink = typeof href === 'string';
 
-  $: props = isLink ? { href } : { };
+  $: props = isLink ? { href } : {};
 
   $: Component = isLink ? 'a' : 'button';
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions --> <!-- it's a button which already have all the a11y stuff -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- it's a button which already have all the a11y stuff -->
 <svelte:element
   this={Component}
   class="block w-12 h-12 p-2 rounded-md border-zinc-300 border cursor-default
