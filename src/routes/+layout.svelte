@@ -3,8 +3,10 @@
   import { WindowState } from '$lib/types';
   import type { LayoutData } from './$types';
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
-  import { appAPI } from '$lib/api';
+  import { goto, invalidate } from '$app/navigation';
+  import { appAPI, apiUrls } from '$lib/api';
+  import Command from '$lib/components/Command.svelte';
+  import Button from '$lib/components/Button.svelte';
 
   export let data: LayoutData;
 
@@ -20,22 +22,23 @@
     const command = await appAPI().addCommand({
       name: '',
       command: '',
-      cwd: '',
     });
+    console.log({ command });
 
-    goto(`/command/${command.id}`);
+    await invalidate(apiUrls.getCommands());
+
+    await goto(`/command/${command.id}`);
   }
 </script>
 
 <div class="app" class:editing={isEditing}>
+  <div style="grid-area: command-top" class="flex flex-row items-center gap-4 px-4">
+    <Button icon="plus" title="Add Command" on:click={onAdd} />
+  </div>
   <div style="grid-area: command-main">
     {#each data.commands as command}
-      <a class="block p-4 m-4 bg-zinc-200 hover:bg-zinc-300" href={`/command/${command.id}`}
-        >{command.name}</a
-      >
+      <Command {command} />
     {/each}
-    <button class="block p-4 m-4 bg-zinc-200 hover:bg-zinc-300" on:click={onAdd}>Add Command</button
-    >
   </div>
   {#if isEditing}
     <slot />
@@ -54,13 +57,5 @@
 
   .editing {
     grid-template-columns: 300px auto;
-  }
-
-  .command-bar {
-  }
-
-  .edit-space {
-    grid-column: 2;
-    grid-row: 1 / span 2;
   }
 </style>

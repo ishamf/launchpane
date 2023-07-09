@@ -1,7 +1,14 @@
 import { appAPI } from '$lib/api';
+import { error } from '@sveltejs/kit';
 
-export function load({ params, depends }) {
+export async function load({ params, depends }) {
+  const command = await appAPI(depends).getCommand(parseInt(params.id));
+
+  if (!command) {
+    throw error(404, 'Command not found');
+  }
+
   return {
-    command: appAPI(depends).getCommand(parseInt(params.id)),
+    command,
   };
 }

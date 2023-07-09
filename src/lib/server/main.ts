@@ -3,6 +3,7 @@ import { join } from 'path';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as API from './api';
 import { setLatestIPCEvent } from './utils';
+import type {} from '../../app.d.ts';
 
 const createWindow = () => {
   const win = new BrowserWindow({

@@ -8,6 +8,7 @@ declare global {
     // interface Locals {}
     interface PageData {
       windowState: WindowState;
+      command?: CommandObject;
     }
     // interface Platform {}
   }

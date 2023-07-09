@@ -42,6 +42,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@mdi/svg": "^7.2.96",
     "@prisma/client": "4.16.2",
     "devalue": "^4.3.2"
   }
