@@ -10,6 +10,6 @@
   bind:value
   on:blur
   {placeholder}
-  class="bg-transparent block w-full focus:bg-zinc-50 transition-all h-12 focus:px-4 focus:outline-none font-sans placeholder:font-sans"
+  class="bg-transparent block w-full focus:bg-zinc-50 transition-all h-12 focus:px-4 outline-none focus:outline-none font-sans placeholder:font-sans"
   class:font-mono={monospace}
 />
