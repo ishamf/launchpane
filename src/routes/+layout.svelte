@@ -47,15 +47,15 @@
 
 <style lang="postcss">
   .app {
-    @apply w-full h-full grid;
+    @apply w-screen h-screen grid;
 
     grid:
       'command-top edit-top' 80px
-      'command-main edit-main' auto
+      'command-main edit-main' 1fr
       / 300px;
   }
 
   .editing {
-    grid-template-columns: 300px auto;
+    grid-template-columns: 300px 1fr;
   }
 </style>

@@ -18,4 +18,23 @@ model Command {
   cwd String
 
   command String
+
+  lastRunResultType String?
+  lastRunCode String?
+
+  logLines CommandLogLine[]
+}
+
+model CommandLogLine {
+  id Int @id @default(autoincrement())
+
+  commandId Int
+
+  command Command @relation(fields: [commandId], references: [id])
+
+  source Int
+
+  line String
+
+  timestamp Float
 }

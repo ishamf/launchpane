@@ -3,5 +3,5 @@
 @tailwind utilities;
 
 body {
-  @apply bg-zinc-200;
+  @apply bg-zinc-200 w-full h-full overflow-hidden;
 }

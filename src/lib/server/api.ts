@@ -1,16 +1,56 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from './db';
 import { BrowserWindow } from 'electron';
-import { WindowState } from '../types';
+import { WindowState, CommandStatus } from '../types';
 import { getIPCEvent } from './utils';
 import { homedir } from 'os';
+import {
+  getCommandStatus,
+  runCommand as runCommandinManager,
+  sendSignalToCommand as sendSignalToCommandInManager,
+} from './processManager';
 
 export async function getCommands() {
-  return prisma.command.findMany();
+  return (await prisma.command.findMany()).map((x) => ({ ...x, status: getCommandStatus(x.id) }));
 }
 
 export async function getCommand(id: number) {
-  return prisma.command.findFirst({ where: { id } });
+  const commandResult = await prisma.command.findFirst({ where: { id } });
+
+  if (!commandResult) return null;
+
+  return { ...commandResult, status: getCommandStatus(id) };
+}
+
+export async function runCommand(id: number) {
+  if (getCommandStatus(id) === CommandStatus.Running) {
+    throw new Error('Command is already running');
+  }
+
+  const command = await getCommand(id);
+
+  if (!command) {
+    throw new Error('Command not found');
+  }
+
+  return runCommandinManager(command);
+}
+
+export async function sendSignalToCommand(id: number, signal: NodeJS.Signals) {
+  console.log('gcs', getCommandStatus(id), { signal });
+  if (getCommandStatus(id) === CommandStatus.Stopped) return;
+
+  return sendSignalToCommandInManager(id, signal);
+}
+
+export async function getCommandLogLines(id: number) {
+  return (
+    await prisma.commandLogLine.findMany({
+      where: { commandId: id },
+      orderBy: { id: 'desc' },
+      take: 1000,
+    })
+  ).reverse();
 }
 
 export async function addCommand(data: Omit<Prisma.CommandCreateInput, 'cwd'> & { cwd?: string }) {
