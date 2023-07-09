@@ -19,8 +19,6 @@
 
   $: commandLogLines = data.commandLogLines.map((l) => l.line.replace(/\n$/, '')).join('\n');
 
-  $: console.log({ data });
-
   async function saveChanges() {
     const { name, command: cmd, cwd } = command;
     await appAPI().updateCommand(command.id, { name, command: cmd, cwd });
@@ -96,7 +94,7 @@
         icon="stop"
         title="Stop"
         on:click={async () => {
-          console.log(await appAPI().sendSignalToCommand(command.id, 'SIGINT'));
+          console.log(await appAPI().sendSignalToCommand(command.id, 'SIGTERM'));
           await invalidate(apiUrls.getCommand(command.id));
         }}
       />
@@ -104,7 +102,7 @@
   </div>
 
   <pre
-    class="flex-1 bg-zinc-700 mx-4 mb-4 p-4 text-white font-mono overflow-auto">{commandLogLines}</pre>
+    class="flex-1 bg-zinc-700 mx-4 mb-4 p-4 text-white font-mono overflow-auto text-sm">{commandLogLines}</pre>
 </div>
 
 <style lang="postcss">

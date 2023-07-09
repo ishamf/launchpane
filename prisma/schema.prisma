@@ -37,4 +37,6 @@ model CommandLogLine {
   line String
 
   timestamp Float
+
+  @@index([commandId, timestamp])
 }

@@ -47,7 +47,7 @@ export async function getCommandLogLines(id: number) {
   return (
     await prisma.commandLogLine.findMany({
       where: { commandId: id },
-      orderBy: { id: 'desc' },
+      orderBy: { timestamp: 'desc' },
       take: 1000,
     })
   ).reverse();
@@ -85,7 +85,7 @@ export async function setWindowState(state: WindowState) {
       window.setSize(300, 650);
       break;
     case WindowState.Editing:
-      window.setSize(800, 650);
+      window.setSize(1280, 650);
       break;
   }
 }

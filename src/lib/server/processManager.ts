@@ -24,13 +24,13 @@ export function runCommand(command: CommandObject) {
 
   const childProcess = spawn(command.command, { cwd, shell: getShell() });
 
-  console.log({ childProcess });
+  // console.log({ pid: childProcess.pid });
 
   const stdoutInterface = createInterface({ input: childProcess.stdout, crlfDelay: Infinity });
   const stdErrInterface = createInterface({ input: childProcess.stderr, crlfDelay: Infinity });
 
   stdoutInterface.on('line', async (line) => {
-    console.log({ line });
+    // console.log({ line });
     await prisma.commandLogLine.create({
       data: {
         commandId: command.id,
@@ -42,7 +42,7 @@ export function runCommand(command: CommandObject) {
   });
 
   stdErrInterface.on('line', async (line) => {
-    console.log({ line });
+    // console.log({ line });
     await prisma.commandLogLine.create({
       data: {
         commandId: command.id,
