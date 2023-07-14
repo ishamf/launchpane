@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
     "outDir": ".app/build",
+    "target": "ES2015",
+    "moduleResolution": "Node",
+    "module": "CommonJS",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,

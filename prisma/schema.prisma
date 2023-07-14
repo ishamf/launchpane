@@ -20,7 +20,7 @@ model Command {
   command String
 
   lastRunResultType String?
-  lastRunCode String?
+  lastRunCode       String?
 
   logLines CommandLogLine[]
 }
@@ -30,7 +30,7 @@ model CommandLogLine {
 
   commandId Int
 
-  command Command @relation(fields: [commandId], references: [id])
+  command Command @relation(fields: [commandId], references: [id], onDelete: Cascade)
 
   source Int
 

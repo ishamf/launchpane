@@ -10,6 +10,7 @@ import {
   runCommand as runCommandinManager,
   sendSignalToCommand as sendSignalToCommandInManager,
 } from './processManager';
+import { notifyCommandUpdated } from './notification';
 
 export async function getCommands() {
   return (await prisma.command.findMany()).map((x) => ({ ...x, status: getCommandStatus(x.id) }));
@@ -34,7 +35,9 @@ export async function runCommand(id: number) {
     throw new Error('Command not found');
   }
 
-  return runCommandinManager(command);
+  runCommandinManager(command);
+
+  notifyCommandUpdated(id);
 }
 
 export async function sendSignalToCommand(id: number, signal: NodeJS.Signals) {
@@ -54,22 +57,42 @@ export async function getCommandLogLines(id: number) {
   ).reverse();
 }
 
+export async function getNewerCommandLines(commandId: number, lastLogId: number) {
+  if (!lastLogId) {
+    return getCommandLogLines(commandId);
+  }
+
+  return prisma.commandLogLine.findMany({
+    where: { commandId },
+    orderBy: { timestamp: 'asc' },
+    cursor: { id: lastLogId },
+    skip: 1,
+    take: 1000,
+  });
+}
+
 export async function addCommand(data: Omit<Prisma.CommandCreateInput, 'cwd'> & { cwd?: string }) {
   const dataWithDefaults = { ...data, cwd: data.cwd ?? homedir() };
-  return prisma.command.create({
+  const result = await prisma.command.create({
     data: dataWithDefaults,
   });
+  notifyCommandUpdated(result.id);
+  return result;
 }
 
 export async function updateCommand(id: number, data: Prisma.CommandUpdateInput) {
-  return prisma.command.update({
+  const result = await prisma.command.update({
     where: { id },
     data,
   });
+  notifyCommandUpdated(id);
+  return result;
 }
 
 export async function deleteCommand(id: number) {
-  return prisma.command.delete({ where: { id } });
+  const result = await prisma.command.delete({ where: { id } });
+  notifyCommandUpdated(id);
+  return result;
 }
 
 export async function setWindowState(state: WindowState) {
@@ -83,10 +106,10 @@ export async function setWindowState(state: WindowState) {
 
   switch (state) {
     case WindowState.List:
-      window.setSize(300, 650);
+      window.setContentSize(300, 650);
       break;
     case WindowState.Editing:
-      window.setSize(1280, 650);
+      window.setContentSize(1280, 650);
       break;
   }
 }

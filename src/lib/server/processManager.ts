@@ -8,6 +8,7 @@ import type { Writable, Readable } from 'stream';
 import { prisma } from './db';
 import { performance } from 'perf_hooks';
 import { getShell } from './utils';
+import { notifyCommandLogLineAdded, notifyCommandUpdated, notifyDataUpdate } from './notification';
 
 const runningProcesses: { [id: number]: ChildProcessByStdio<Writable, Readable, Readable> } = {};
 
@@ -39,6 +40,7 @@ export function runCommand(command: CommandObject) {
         timestamp: performance.timeOrigin + performance.now(),
       },
     });
+    notifyCommandLogLineAdded(command.id);
   });
 
   stdErrInterface.on('line', async (line) => {
@@ -51,6 +53,7 @@ export function runCommand(command: CommandObject) {
         timestamp: performance.timeOrigin + performance.now(),
       },
     });
+    notifyCommandLogLineAdded(command.id);
   });
 
   childProcess.on('exit', (code, signal) => {
@@ -66,6 +69,9 @@ export function runCommand(command: CommandObject) {
         lastRunCode,
       },
     });
+
+    notifyCommandUpdated(command.id);
+    notifyCommandLogLineAdded(command.id);
   });
 
   runningProcesses[command.id] = childProcess;

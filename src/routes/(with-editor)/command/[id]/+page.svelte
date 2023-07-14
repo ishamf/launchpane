@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
 
-  import { goto, invalidate } from '$app/navigation';
+  import { goto } from '$app/navigation';
 
   import { appAPI, apiUrls } from '$lib/api';
   import { getCommandDescriptor, showCommandTitleWithMonospace } from '$lib/utils';
@@ -10,20 +10,26 @@
   import Button from '$lib/components/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import { CommandStatus } from '$lib/types';
+  import { getNewLogLinesStore } from './utils';
 
   export let data: PageData;
 
   $: command = data.command;
 
+  $: newLogLinesStore = getNewLogLinesStore(
+    data.command.id,
+    data.commandLogLines[data.commandLogLines.length - 1]?.id || 0,
+  );
+
   $: statusText = command.status === CommandStatus.Running ? 'Running' : 'Stopped';
 
-  $: commandLogLines = data.commandLogLines.map((l) => l.line.replace(/\n$/, '')).join('\n');
+  $: commandLogLines = [...data.commandLogLines, ...$newLogLinesStore]
+    .map((l) => l.line.replace(/\n$/, ''))
+    .join('\n');
 
   async function saveChanges() {
     const { name, command: cmd, cwd } = command;
     await appAPI().updateCommand(command.id, { name, command: cmd, cwd });
-    invalidate(apiUrls.getCommands());
-    invalidate(apiUrls.getCommand(command.id));
   }
 </script>
 
@@ -42,7 +48,6 @@
     title="Delete"
     on:click={async () => {
       await appAPI().deleteCommand(command.id);
-      await invalidate(apiUrls.getCommands());
       await goto('/');
     }}
   />
@@ -86,7 +91,6 @@
         title="Start"
         on:click={async () => {
           await appAPI().runCommand(command.id);
-          await invalidate(apiUrls.getCommand(command.id));
         }}
       />
     {:else}
@@ -95,7 +99,6 @@
         title="Stop"
         on:click={async () => {
           console.log(await appAPI().sendSignalToCommand(command.id, 'SIGTERM'));
-          await invalidate(apiUrls.getCommand(command.id));
         }}
       />
     {/if}

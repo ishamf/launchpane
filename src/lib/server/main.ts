@@ -3,6 +3,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import * as API from './api';
 import { setLatestIPCEvent } from './utils';
 import type {} from '../../app.d.ts';
+import { addDataUpdateListener } from './notification';
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -18,6 +19,14 @@ const createWindow = () => {
   win.loadURL('http://localhost:5173');
 
   win.webContents.openDevTools();
+
+  const remove = addDataUpdateListener((data) => {
+    win.webContents.send('dataUpdate', data);
+  });
+
+  win.on('close', () => {
+    remove();
+  });
 };
 
 app.whenReady().then(() => {

@@ -17,3 +17,15 @@ export enum CommandStatus {
 }
 
 export type CommandObject = NonNullable<Prisma.PromiseReturnType<AppAPIType['getCommand']>>;
+
+export type CommandLogLines = Awaited<ReturnType<AppAPIType['getCommandLogLines']>>;
+
+export type DataUpdateEvent =
+  | {
+      type: 'command';
+      id: number;
+    }
+  | {
+      type: 'commandLogLine';
+      id: number;
+    };

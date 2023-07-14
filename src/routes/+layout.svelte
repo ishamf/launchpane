@@ -3,7 +3,7 @@
   import { WindowState } from '$lib/types';
   import type { LayoutData } from './$types';
   import { page } from '$app/stores';
-  import { goto, invalidate } from '$app/navigation';
+  import { goto } from '$app/navigation';
   import { appAPI, apiUrls } from '$lib/api';
   import Command from '$lib/components/Command.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -24,8 +24,6 @@
       command: '',
     });
     console.log({ command });
-
-    await invalidate(apiUrls.getCommands());
 
     await goto(`/command/${command.id}`);
   }
