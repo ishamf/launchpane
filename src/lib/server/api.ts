@@ -4,6 +4,7 @@ import { BrowserWindow } from 'electron';
 import { WindowState, CommandStatus } from '../types';
 import { getIPCEvent } from './utils';
 import { homedir } from 'os';
+import { sep } from 'path';
 import {
   getCommandStatus,
   runCommand as runCommandinManager,
@@ -88,4 +89,10 @@ export async function setWindowState(state: WindowState) {
       window.setSize(1280, 650);
       break;
   }
+}
+
+export async function getPlatformDetails() {
+  return {
+    pathSeparator: sep,
+  };
 }
