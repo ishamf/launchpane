@@ -13,19 +13,26 @@ export function getLogLinesStore(commandId: number, initialCommandLogLines: Comm
 
     mutex.runExclusive(async () => {
       const log = await appAPI().getCommandLogLines(commandId);
-      lastLogId = log[log.length - 1].id;
+      if (log.length > 0) lastLogId = log[log.length - 1].id;
       set(log);
     });
 
-    const remove = onNewLogLines(commandId, debounce(() => {
-      mutex.runExclusive(async () => {
-        const newLog = await appAPI().getNewerCommandLines(commandId, lastLogId);
-        if (newLog.length > 0) {
-          lastLogId = newLog[newLog.length - 1].id;
-          update((current) => [...current, ...newLog]);
-        }
-      });
-    }, 100, {maxWait: 100}));
+    const remove = onNewLogLines(
+      commandId,
+      debounce(
+        () => {
+          mutex.runExclusive(async () => {
+            const newLog = await appAPI().getNewerCommandLines(commandId, lastLogId);
+            if (newLog.length > 0) {
+              lastLogId = newLog[newLog.length - 1].id;
+              update((current) => [...current, ...newLog]);
+            }
+          });
+        },
+        100,
+        { maxWait: 100 },
+      ),
+    );
 
     return () => {
       console.debug('Removed log lines store', commandId);
