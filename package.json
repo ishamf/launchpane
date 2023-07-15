@@ -20,7 +20,13 @@
   },
   "build": {
     "appId": "launchpane",
-    "files": ".app/**/*"
+    "files": ".app/**/*",
+    "extraResources": [
+      {
+        "from": ".app/prisma",
+        "to": "prisma"
+      }
+    ]
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.2",
