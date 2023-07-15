@@ -4,7 +4,7 @@
   import type { LayoutData } from './$types';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { appAPI, apiUrls } from '$lib/api';
+  import { appAPI } from '$lib/api';
   import Command from '$lib/components/Command.svelte';
   import Button from '$lib/components/Button.svelte';
 
@@ -23,7 +23,6 @@
       name: '',
       command: '',
     });
-    console.log({ command });
 
     await goto(`/command/${command.id}`);
   }
