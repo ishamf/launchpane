@@ -9,15 +9,23 @@
     "dev:ui": "vite dev",
     "dev:app": "tsc -w --project ./tsconfig.app.json",
     "build:ui": "vite build",
-    "start": "electron .",
+    "start": "electron-forge start",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest",
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
-    "format": "prettier --plugin-search-dir . --write ."
+    "format": "prettier --plugin-search-dir . --write .",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^6.2.1",
+    "@electron-forge/maker-deb": "^6.2.1",
+    "@electron-forge/maker-rpm": "^6.2.1",
+    "@electron-forge/maker-squirrel": "^6.2.1",
+    "@electron-forge/maker-zip": "^6.2.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^6.2.1",
     "@sveltejs/adapter-auto": "^2.0.0",
     "@sveltejs/kit": "^1.20.4",
     "@types/lodash-es": "^4.17.8",
@@ -47,6 +55,7 @@
     "@prisma/client": "4.16.2",
     "async-mutex": "^0.4.0",
     "devalue": "^4.3.2",
+    "electron-squirrel-startup": "^1.0.0",
     "lodash-es": "^4.17.21"
   }
 }
