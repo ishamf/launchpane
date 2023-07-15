@@ -1,10 +1,11 @@
 import sucrase from '@rollup/plugin-sucrase';
 import resolvePlugin from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
 import copy from 'rollup-plugin-copy'
 
 import { realpathSync } from 'fs';
-import { resolve,dirname } from 'path';
+import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -17,13 +18,14 @@ const baseConfig = {
 
     plugins: [
         resolvePlugin({
-            extensions: ['.js', '.ts']
+            extensions: ['.js', '.ts', '.json']
         }),
         sucrase({
             exclude: ['node_modules/**'],
             transforms: ['typescript']
         }),
-        commonjs()
+        commonjs(),
+        json(),
     ]
 }
 
@@ -39,8 +41,24 @@ export default [
             ...baseConfig.plugins,
             copy({
                 targets: [
-                    { src: 'prisma/schema.prisma', dest: '.app/build' },
-                    { src: resolve(realpathSync(resolve(__dirname, 'node_modules/@prisma/client')), '../../.prisma/client/lib*'), dest: '.app/build' },
+                    {
+                        src: [
+                            'node_modules/.pnpm/@prisma*@4*/**/*.wasm',
+                        ], dest: '.app/build'
+                    },
+                    {
+                        src: [
+                            'node_modules/@prisma/engines/lib*',
+                            'node_modules/@prisma/engines/migration*',
+                        ], dest: '.app/'
+                    },
+                    {
+                        src: [
+                            'prisma/schema.prisma',
+                            'prisma/migrations',
+                        ], dest: '.app/prisma'
+                    },
+
                 ]
             })
         ]

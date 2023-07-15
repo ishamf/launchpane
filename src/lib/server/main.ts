@@ -4,6 +4,7 @@ import * as API from './api';
 import { setLatestIPCEvent } from './utils';
 import type {} from '../../app.d.ts';
 import { addDataUpdateListener } from './notification';
+import { initialiseDatabase } from './db';
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -29,7 +30,9 @@ const createWindow = () => {
   });
 };
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await initialiseDatabase();
+
   ipcMain.handle('invokeProxiedFunction', (event, fnName: string, ...args: unknown[]) => {
     setLatestIPCEvent(event);
     try {

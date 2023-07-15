@@ -10,7 +10,7 @@
     "dev:app": "rollup -c -w",
     "package:dir": "electron-builder --dir",
     "build:ui": "vite build",
-    "start": "electron .",
+    "start": "cd .app && electron ..",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.2",
+    "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^15.1.0",
     "@rollup/plugin-sucrase": "^5.0.1",
     "@sveltejs/adapter-auto": "^2.0.0",
@@ -56,8 +57,19 @@
   "dependencies": {
     "@mdi/svg": "^7.2.96",
     "@prisma/client": "4.16.2",
+    "@prisma/engines": "4.16.2",
+    "@prisma/migrate": "4.16.2",
+    "@prisma/internals": "^4",
+    "@prisma/generator-helper": "^4",
     "async-mutex": "^0.4.0",
     "devalue": "^4.3.2",
     "lodash-es": "^4.17.21"
+  },
+  "pnpm": {
+    "packageExtensions": {
+      "@prisma/migrate": {
+        "types": "dist/migrate/src/index.d.ts"
+      }
+    }
   }
 }
