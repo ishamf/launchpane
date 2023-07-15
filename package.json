@@ -5,11 +5,9 @@
   "packageManager": "pnpm@8.6.6",
   "main": ".app/build/server/main.js",
   "scripts": {
-    "dev": "concurrently \"pnpm run dev:ui\" \"pnpm run dev:app\"",
-    "dev:ui": "vite dev",
-    "dev:app": "tsc -w --project ./tsconfig.app.json",
-    "build:ui": "vite build",
-    "start": "electron .",
+    "dev": "vite dev",
+    "build": "vite build",
+    "tauri": "tauri",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -18,14 +16,14 @@
     "format": "prettier --plugin-search-dir . --write ."
   },
   "devDependencies": {
-    "@sveltejs/adapter-auto": "^2.0.0",
+    "@sveltejs/adapter-static": "^2.0.2",
     "@sveltejs/kit": "^1.20.4",
+    "@tauri-apps/cli": "^1.4.0",
     "@types/lodash-es": "^4.17.8",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "autoprefixer": "^10.4.14",
     "concurrently": "^8.2.0",
-    "electron": "^25.2.0",
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-svelte": "^2.30.0",
@@ -45,6 +43,7 @@
   "dependencies": {
     "@mdi/svg": "^7.2.96",
     "@prisma/client": "4.16.2",
+    "@tauri-apps/api": "^1.4.0",
     "async-mutex": "^0.4.0",
     "devalue": "^4.3.2",
     "lodash-es": "^4.17.21"
