@@ -14,9 +14,10 @@ export const appAPI = (depends?: (id: string) => void) =>
             if (dependsStringFn) depends(dependsStringFn(...args));
           }
 
-          console.debug('Calling API function', prop, args);
+          // console.debug('Calling API function', prop, args);
+          const prev = performance.now();
           const result = await electronAPI.invokeProxiedFunction(prop, ...args);
-          console.debug('Called API function', prop, args, result);
+          console.debug('Called API function', prop, args, result, performance.now() - prev);
           return result;
         };
       },

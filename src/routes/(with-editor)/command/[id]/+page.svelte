@@ -10,20 +10,25 @@
   import Button from '$lib/components/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import { CommandStatus } from '$lib/types';
-  import { getNewLogLinesStore } from './utils';
+  import { getLogLinesStore } from './utils';
 
   export let data: PageData;
 
   $: command = data.command;
 
-  $: newLogLinesStore = getNewLogLinesStore(
-    data.command.id,
-    data.commandLogLines[data.commandLogLines.length - 1]?.id || 0,
-  );
+  let logLines = getLogLinesStore(data.command.id);
+  let logLinesId = data.command.id
+
+  $: {
+    if (command && logLinesId !== command.id) {
+      logLines = getLogLinesStore(command.id);
+      logLinesId = command.id;
+    }
+  }
 
   $: statusText = command.status === CommandStatus.Running ? 'Running' : 'Stopped';
 
-  $: commandLogLines = [...data.commandLogLines, ...$newLogLinesStore]
+  $: commandLogLines = $logLines
     .map((l) => l.line.replace(/\n$/, ''))
     .join('\n');
 
