@@ -35,7 +35,7 @@ export async function runCommand(id: number) {
     throw new Error('Command not found');
   }
 
-  runCommandinManager(command);
+  await runCommandinManager(command);
 
   notifyCommandUpdated(id);
 }

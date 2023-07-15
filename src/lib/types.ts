@@ -9,6 +9,8 @@ export enum WindowState {
 export enum CommandLineSource {
   STDOUT = 1,
   STDERR = 2,
+
+  INFO = 3,
 }
 
 export enum CommandStatus {

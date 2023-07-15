@@ -32,11 +32,16 @@ const createWindow = () => {
 app.whenReady().then(() => {
   ipcMain.handle('invokeProxiedFunction', (event, fnName: string, ...args: unknown[]) => {
     setLatestIPCEvent(event);
-    // @ts-expect-error we typecheck this in the clientside proxy
-    const promise = API[fnName](...args);
-    setLatestIPCEvent(null);
-
-    return promise;
+    try {
+      // @ts-expect-error we typecheck this in the clientside proxy
+      const promise = API[fnName](...args);
+      return promise;
+    } catch (e) {
+      console.error(e);
+      return Promise.reject(e);
+    } finally {
+      setLatestIPCEvent(null);
+    }
   });
 
   createWindow();
