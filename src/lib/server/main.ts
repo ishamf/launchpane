@@ -33,8 +33,12 @@ app.whenReady().then(() => {
   ipcMain.handle('invokeProxiedFunction', (event, fnName: string, ...args: unknown[]) => {
     setLatestIPCEvent(event);
     try {
+      // const start = performance.now();
       // @ts-expect-error we typecheck this in the clientside proxy
       const promise = API[fnName](...args);
+      // promise.then(() => {
+      //   console.debug('Finished', fnName, 'in', performance.now() - start, 'ms');
+      // })
       return promise;
     } catch (e) {
       console.error(e);

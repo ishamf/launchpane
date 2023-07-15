@@ -16,12 +16,12 @@
 
   $: command = data.command;
 
-  let logLines = getLogLinesStore(data.command.id);
+  let logLines = getLogLinesStore(data.command.id, data.initialCommandLogLines);
   let logLinesId = data.command.id
 
   $: {
     if (command && logLinesId !== command.id) {
-      logLines = getLogLinesStore(command.id);
+      logLines = getLogLinesStore(command.id, data.initialCommandLogLines);
       logLinesId = command.id;
     }
   }

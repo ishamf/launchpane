@@ -4,9 +4,9 @@ import { Mutex } from 'async-mutex';
 import type { CommandLogLines } from '$lib/types';
 import { debounce } from 'lodash-es';
 
-export function getLogLinesStore(commandId: number) {
+export function getLogLinesStore(commandId: number, initialCommandLogLines: CommandLogLines) {
   console.debug('Created log lines store', commandId);
-  const store = readable([] as CommandLogLines, (set, update) => {
+  const store = readable(initialCommandLogLines as CommandLogLines, (set, update) => {
     console.debug('Subscribed to log lines store', commandId);
     const mutex = new Mutex();
     let lastLogId = 0;
