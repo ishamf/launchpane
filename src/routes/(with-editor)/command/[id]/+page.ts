@@ -8,11 +8,10 @@ export async function load({ params, depends }) {
     throw error(404, 'Command not found');
   }
 
-  // const initialCommandLogLines = await appAPI(depends).getCommandLogLines(command.id);
+  const initialCommandLogLines = await appAPI(depends).getCommandLogLines(command.id);
 
   return {
     command,
-    initialCommandLogLines: [],
-    
+    initialCommandLogLines,
   };
 }

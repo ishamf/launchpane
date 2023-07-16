@@ -8,10 +8,10 @@ use std::{path::MAIN_SEPARATOR, sync::Arc, vec};
 
 use prisma::*;
 
-use prisma_client_rust::QueryError;
+use prisma_client_rust::{Direction, QueryError};
 use serde::Serialize;
 use specta::{collect_types, Type};
-use tauri::{generate_handler, LogicalSize, Manager, Size, Window, api::path::home_dir};
+use tauri::{api::path::home_dir, generate_handler, LogicalSize, Manager, Size, Window};
 use tauri_specta::ts;
 
 type AppState<'a> = tauri::State<'a, Arc<AppStateData>>;
@@ -40,6 +40,45 @@ async fn get_command(
         .await
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn get_command_log_lines(
+    state: AppState<'_>,
+    command_id: i32,
+) -> Result<Vec<command_log_line::Data>, QueryError> {
+    let mut log_lines = state
+        .client
+        .command_log_line()
+        .find_many(vec![command_log_line::command_id::equals(command_id)])
+        .order_by(command_log_line::timestamp::order(Direction::Desc))
+        .take(1000)
+        .exec()
+        .await?;
+
+    log_lines.reverse();
+
+    Ok(log_lines)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_newer_command_log_lines(
+    state: AppState<'_>,
+    command_id: i32,
+    last_id: i32,
+) -> Result<Vec<command_log_line::Data>, QueryError> {
+    state
+        .client
+        .command_log_line()
+        .find_many(vec![command_log_line::command_id::equals(command_id)])
+        .order_by(command_log_line::timestamp::order(Direction::Asc))
+        .cursor(command_log_line::id::equals(last_id))
+        .skip(1)
+        .take(1000)
+        .exec()
+        .await
+}
+
 command::partial_unchecked!(CommandUpdateData {
     name
     command
@@ -63,11 +102,27 @@ async fn update_command(
 
 #[tauri::command]
 #[specta::specta]
+async fn delete_command(state: AppState<'_>, command_id: i32) -> Result<command::Data, QueryError> {
+    state
+        .client
+        .command()
+        .delete(command::id::equals(command_id))
+        .exec()
+        .await
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn create_command(state: AppState<'_>) -> Result<command::Data, QueryError> {
     state
         .client
         .command()
-        .create("".into(), home_dir().unwrap_or("".into()).to_string_lossy().into(), "".into(), vec![])
+        .create(
+            "".into(),
+            home_dir().unwrap_or("".into()).to_string_lossy().into(),
+            "".into(),
+            vec![],
+        )
         .exec()
         .await
 }
@@ -103,7 +158,10 @@ async fn main() {
             get_command,
             set_window_size,
             update_command,
-            get_platform_details
+            delete_command,
+            get_platform_details,
+            get_command_log_lines,
+            get_newer_command_log_lines
         ],
         "../src/lib/bindings.ts",
     )
@@ -135,7 +193,10 @@ async fn main() {
             get_command,
             set_window_size,
             update_command,
-            get_platform_details
+            delete_command,
+            get_platform_details,
+            get_command_log_lines,
+            get_newer_command_log_lines
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

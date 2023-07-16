@@ -30,10 +30,23 @@ export function updateCommand(commandId: number, data: CommandUpdateData) {
     return invoke()<Command>("update_command", { commandId,data })
 }
 
+export function deleteCommand(commandId: number) {
+    return invoke()<Command>("delete_command", { commandId })
+}
+
 export function getPlatformDetails() {
     return invoke()<PlatformDetails>("get_platform_details")
 }
 
+export function getCommandLogLines(commandId: number) {
+    return invoke()<CommandLogLine[]>("get_command_log_lines", { commandId })
+}
+
+export function getNewerCommandLogLines(commandId: number, lastId: number) {
+    return invoke()<CommandLogLine[]>("get_newer_command_log_lines", { commandId,lastId })
+}
+
+export type PlatformDetails = { path_separator: string }
 export type Command = { id: number; name: string; cwd: string; command: string; lastRunResultType: string | null; lastRunCode: string | null }
 export type CommandUpdateData = { name?: string | null; cwd?: string | null; command?: string | null }
-export type PlatformDetails = { path_separator: string }
+export type CommandLogLine = { id: number; commandId: number; source: number; line: string; timestamp: number }
