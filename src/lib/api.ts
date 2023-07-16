@@ -1,5 +1,6 @@
 import * as bindingsApi from './bindings';
-import type { DataUpdateEvent } from './types';
+import type { AppEventPayload } from './events';
+import { listen, type Event } from '@tauri-apps/api/event';
 
 export type AppAPIType = typeof bindingsApi;
 
@@ -34,11 +35,14 @@ const internalDependsString: {
   [k in keyof AppAPIType]?: (...args: Parameters<AppAPIType[k]>) => string;
 } = apiUrls;
 
-export const onDataUpdate = (callback: (data: DataUpdateEvent) => void) => () => {
-  console.log('pass');
+export const onDataUpdate = (callback: (data: Event<AppEventPayload>) => void) => {
+  const removePromise = listen<AppEventPayload>('change_event', callback);
+
+  return () => removePromise.then((remove) => remove());
 };
 
 export const onNewLogLines = (commandId: number, callback: () => void) =>
   onDataUpdate((data) => {
-    if (data.type === 'commandLogLine' && data.id === commandId) callback();
+    if ('CommandLogUpdateEvent' in data.payload && data.payload.CommandLogUpdateEvent === commandId)
+      callback();
   });

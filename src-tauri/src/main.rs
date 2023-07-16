@@ -4,14 +4,19 @@
 #[allow(warnings, unused)]
 mod prisma;
 
+mod errors;
+mod events;
+
 use std::{path::MAIN_SEPARATOR, sync::Arc, vec};
 
+use errors::AppCommandError;
+use events::{send_command_update_event, AppEventPayload};
 use prisma::*;
 
 use prisma_client_rust::{Direction, QueryError};
 use serde::Serialize;
 use specta::{collect_types, Type};
-use tauri::{api::path::home_dir, generate_handler, LogicalSize, Manager, Size, Window};
+use tauri::{api::path::home_dir, generate_handler, AppHandle, LogicalSize, Manager, Size, Window};
 use tauri_specta::ts;
 
 type AppState<'a> = tauri::State<'a, Arc<AppStateData>>;
@@ -89,32 +94,48 @@ command::partial_unchecked!(CommandUpdateData {
 #[specta::specta]
 async fn update_command(
     state: AppState<'_>,
+    app: AppHandle,
     command_id: i32,
     data: CommandUpdateData,
-) -> Result<command::Data, QueryError> {
-    state
+) -> Result<command::Data, AppCommandError> {
+    let result = state
         .client
         .command()
         .update_unchecked(command::id::equals(command_id), data.to_params())
         .exec()
-        .await
+        .await?;
+
+    send_command_update_event(app, command_id)?;
+
+    Ok(result)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn delete_command(state: AppState<'_>, command_id: i32) -> Result<command::Data, QueryError> {
-    state
+async fn delete_command(
+    state: AppState<'_>,
+    app: AppHandle,
+    command_id: i32,
+) -> Result<command::Data, AppCommandError> {
+    let result = state
         .client
         .command()
         .delete(command::id::equals(command_id))
         .exec()
-        .await
+        .await?;
+
+    send_command_update_event(app, command_id)?;
+
+    Ok(result)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn create_command(state: AppState<'_>) -> Result<command::Data, QueryError> {
-    state
+async fn create_command(
+    state: AppState<'_>,
+    app: AppHandle,
+) -> Result<command::Data, AppCommandError> {
+    let result = state
         .client
         .command()
         .create(
@@ -124,7 +145,11 @@ async fn create_command(state: AppState<'_>) -> Result<command::Data, QueryError
             vec![],
         )
         .exec()
-        .await
+        .await?;
+
+    send_command_update_event(app, result.id)?;
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -161,11 +186,18 @@ async fn main() {
             delete_command,
             get_platform_details,
             get_command_log_lines,
-            get_newer_command_log_lines
+            get_newer_command_log_lines,
         ],
         "../src/lib/bindings.ts",
     )
     .unwrap();
+
+    #[cfg(debug_assertions)]
+    {
+        let app_event_type = specta::ts::export::<AppEventPayload>(&Default::default()).unwrap();
+
+        std::fs::write("../src/lib/events.ts", app_event_type).unwrap();
+    };
 
     let db_client: PrismaClient = PrismaClient::_builder()
         .with_url("file:./app.db".into())
@@ -185,6 +217,7 @@ async fn main() {
         .setup(|app| {
             #[cfg(debug_assertions)]
             app.get_window("main").unwrap().open_devtools();
+
             Ok(())
         })
         .invoke_handler(generate_handler![

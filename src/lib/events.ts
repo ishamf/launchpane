@@ -1,0 +1,1 @@
+export type AppEventPayload = { CommandUpdateEvent: number } | { CommandLogUpdateEvent: number }

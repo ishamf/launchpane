@@ -3,9 +3,10 @@ import { onDataUpdate, apiUrls } from '$lib/api';
 
 export function setupCommandInvalidation() {
   onDataUpdate((data) => {
-    if (data.type === 'command') {
+    console.log('Received event', data);
+    if ('CommandUpdateEvent' in data.payload) {
       invalidate(apiUrls.getCommands());
-      invalidate(apiUrls.getCommand(data.id));
+      invalidate(apiUrls.getCommand(data.payload.CommandUpdateEvent));
     }
   });
 }
