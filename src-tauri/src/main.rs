@@ -203,12 +203,12 @@ async fn main() {
         .with_url("file:./app.db".into())
         .build()
         .await
-        .expect("Error when creating database client");
+        .expect("Database should be accessible");
 
     db_client
         ._migrate_deploy()
         .await
-        .expect("Error when deploying database changes");
+        .expect("Database migration should succeed");
 
     let state = AppStateData { client: db_client };
 

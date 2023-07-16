@@ -9,5 +9,7 @@ export async function loadPlatformData() {
 export function getPlatformDetails() {
   if (!platformDetails) throw new Error('Platform details not initialized');
 
-  return platformDetails;
+  return {
+    pathSeparator: platformDetails.path_separator,
+  };
 }
