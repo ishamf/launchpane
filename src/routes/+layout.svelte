@@ -15,14 +15,16 @@
   $: isEditing = windowState === WindowState.Editing;
 
   $: {
-    appAPI().setWindowState(windowState);
+    if (isEditing) {
+      appAPI().setWindowSize(1280, 650);
+
+    } else {
+      appAPI().setWindowSize(300, 650);
+    }
   }
 
   async function onAdd() {
-    const command = await appAPI().addCommand({
-      name: '',
-      command: '',
-    });
+    const command = await appAPI().createCommand();
 
     await goto(`/command/${command.id}`);
   }

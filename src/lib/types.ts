@@ -1,6 +1,8 @@
 import type { Prisma } from '@prisma/client';
 import type { AppAPIType } from './api';
 
+export type { Command } from './bindings';
+
 export enum WindowState {
   List = 0,
   Editing = 1,
@@ -18,9 +20,7 @@ export enum CommandStatus {
   Running = 1,
 }
 
-export type CommandObject = NonNullable<Prisma.PromiseReturnType<AppAPIType['getCommand']>>;
-
-export type CommandLogLines = Awaited<ReturnType<AppAPIType['getCommandLogLines']>>;
+export type CommandLogLines = any[];
 
 export type DataUpdateEvent =
   | {

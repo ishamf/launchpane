@@ -12,7 +12,7 @@ export function getLogLinesStore(commandId: number, initialCommandLogLines: Comm
     let lastLogId = 0;
 
     mutex.runExclusive(async () => {
-      const log = await appAPI().getCommandLogLines(commandId);
+      const log = [] || await appAPI().getCommandLogLines(commandId);
       if (log.length > 0) lastLogId = log[log.length - 1].id;
       set(log);
     });
@@ -22,7 +22,7 @@ export function getLogLinesStore(commandId: number, initialCommandLogLines: Comm
       debounce(
         () => {
           mutex.runExclusive(async () => {
-            const newLog = await appAPI().getNewerCommandLines(commandId, lastLogId);
+            const newLog = [] || await appAPI().getNewerCommandLines(commandId, lastLogId);
             if (newLog.length > 0) {
               lastLogId = newLog[newLog.length - 1].id;
               update((current) => [...current, ...newLog]);
