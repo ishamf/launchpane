@@ -15,18 +15,17 @@ use events::{send_command_update_event, AppEventPayload};
 use prisma::*;
 
 use prisma_client_rust::{Direction, QueryError};
-use process::ProcessManager;
+use process::{ProcessManager, ProcessStatus};
 use serde::Serialize;
 use specta::{collect_types, Type};
 use tauri::{api::path::home_dir, generate_handler, AppHandle, LogicalSize, Manager, Size, Window};
 use tauri_specta::ts;
-use tokio::sync::Mutex;
 
-type AppState<'a> = tauri::State<'a, Arc<AppStateData>>;
+type AppState<'a> = tauri::State<'a, AppStateData>;
 
 struct AppStateData {
     client: Arc<PrismaClient>,
-    process_manager: Mutex<ProcessManager>,
+    process_manager: Arc<ProcessManager>,
 }
 
 #[tauri::command]
@@ -168,12 +167,10 @@ fn set_window_size(window: Window, width: f64, height: f64) -> Result<(), tauri:
 
 #[tauri::command]
 #[specta::specta]
-async fn is_process_running(state: AppState<'_>, command_id: i32) -> Result<bool, AppCommandError> {
+async fn get_process_status(state: AppState<'_>, command_id: i32) -> Result<ProcessStatus, AppCommandError> {
     state
         .process_manager
-        .lock()
-        .await
-        .check_process_running(command_id)
+        .check_process_status(command_id)
         .await
 }
 
@@ -189,7 +186,7 @@ async fn run_process(state: AppState<'_>, command_id: i32) -> Result<(), AppComm
 
     match command {
         Some(command) => {
-            state.process_manager.lock().await.run_process(command).await?;
+            state.process_manager.run_process(command).await?;
             Ok(())
         }
         None => Err(AppCommandError::ClientError(ClientError::CommandNotFound)),
@@ -199,12 +196,7 @@ async fn run_process(state: AppState<'_>, command_id: i32) -> Result<(), AppComm
 #[tauri::command]
 #[specta::specta]
 async fn kill_process(state: AppState<'_>, command_id: i32) -> Result<(), AppCommandError> {
-    state
-        .process_manager
-        .lock()
-        .await
-        .kill_process(command_id)
-        .await
+    state.process_manager.kill_process(command_id).await
 }
 
 #[derive(Type, Serialize)]
@@ -238,7 +230,7 @@ async fn main() {
             get_platform_details,
             get_command_log_lines,
             get_newer_command_log_lines,
-            is_process_running,
+            get_process_status,
             run_process,
             kill_process,
         ],
@@ -276,10 +268,10 @@ async fn main() {
 
             let state = AppStateData {
                 client: client_arc,
-                process_manager: Mutex::new(process_manager),
+                process_manager: Arc::new(process_manager),
             };
 
-            app.manage(Arc::new(state));
+            app.manage(state);
 
             Ok(())
         })
@@ -293,7 +285,7 @@ async fn main() {
             get_platform_details,
             get_command_log_lines,
             get_newer_command_log_lines,
-            is_process_running,
+            get_process_status,
             run_process,
             kill_process,
         ])

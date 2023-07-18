@@ -3,15 +3,13 @@
 
   import { goto } from '$app/navigation';
 
-  import { appAPI, apiUrls } from '$lib/api';
+  import { appAPI } from '$lib/api';
   import { getCommandDescriptor, showCommandTitleWithMonospace } from '$lib/utils';
 
   import TextInput from '$lib/components/TextInput.svelte';
   import Button from '$lib/components/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
-  import { CommandStatus } from '$lib/types';
   import { getLogLinesStore } from './utils';
-  import { isProcessRunning } from '$lib/bindings';
 
   export let data: PageData;
 
@@ -27,7 +25,7 @@
     }
   }
 
-  $: statusText = data.isProcessRunning ? 'Running' : 'Stopped';
+  $: statusText = data.processStatus;
 
   $: commandLogLines = $logLines.map((l) => l.line.replace(/\n$/, '')).join('\n');
 
@@ -89,7 +87,7 @@
     <p class="flex-1">
       Status: {statusText}
     </p>
-    {#if !data.isProcessRunning}
+    {#if data.processStatus === 'Stopped'}
       <Button
         icon="play"
         title="Start"

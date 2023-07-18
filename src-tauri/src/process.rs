@@ -8,6 +8,8 @@ use nix::{
     sys::signal::{kill, Signal},
     unistd::Pid,
 };
+use serde::Serialize;
+use specta::Type;
 use tauri::AppHandle;
 use tokio::time::{sleep, Duration};
 use tokio::{select, sync::Mutex};
@@ -41,41 +43,61 @@ fn timestamp() -> Result<f64, SystemTimeError> {
 struct OngoingProcess {
     command_id: i32,
     child: Arc<Mutex<Child>>,
-    output_join_handle: Arc<Mutex<Option<JoinHandle<Result<(), AppCommandError>>>>>,
+
+    // The join handle of the task that waits for the process to finish
     status_join_handle: JoinHandle<Result<(), AppCommandError>>,
+
+    // The join handle of the task to store the output of the process
+    // It can be consumed either when the process stops normally or when it's killed, so we need to use an Option here
+    output_join_handle: Arc<Mutex<Option<JoinHandle<Result<(), AppCommandError>>>>>,
 }
 
 pub struct ProcessManager {
     ongoing_processes: Arc<Mutex<Vec<OngoingProcess>>>,
+    stopping_commands: Arc<Mutex<Vec<i32>>>,
     app_handle: Arc<AppHandle>,
     db_client: Arc<PrismaClient>,
+}
+
+#[derive(Debug, Serialize, Type, Clone, Copy)]
+pub enum ProcessStatus {
+    Running,
+    Stopping,
+    Stopped,
 }
 
 impl ProcessManager {
     pub fn new(app_handle: Arc<AppHandle>, db_client: Arc<PrismaClient>) -> Self {
         Self {
             ongoing_processes: Arc::new(Mutex::new(vec![])),
+            stopping_commands: Arc::new(Mutex::new(vec![])),
             app_handle,
             db_client,
         }
     }
 
-    pub async fn check_process_running(
-        &mut self,
+    pub async fn check_process_status(
+        &self,
         command_id: i32,
-    ) -> Result<bool, AppCommandError> {
-        let ongoing_processes = self.ongoing_processes.lock().await;
-        let existing_process = ongoing_processes
+    ) -> Result<ProcessStatus, AppCommandError> {
+        let existing_process = self
+            .ongoing_processes
+            .lock()
+            .await
             .iter()
-            .find(|p| p.command_id == command_id);
+            .find(|p| p.command_id == command_id)
+            .is_some();
 
-        match existing_process {
-            None => Ok(false),
-            Some(_) => Ok(true),
+        if existing_process {
+            Ok(ProcessStatus::Running)
+        } else if self.stopping_commands.lock().await.contains(&command_id) {
+            Ok(ProcessStatus::Stopping)
+        } else {
+            Ok(ProcessStatus::Stopped)
         }
     }
 
-    pub async fn kill_process(&mut self, command_id: i32) -> Result<(), AppCommandError> {
+    pub async fn kill_process(&self, command_id: i32) -> Result<(), AppCommandError> {
         let mut ongoing_processes = self.ongoing_processes.lock().await;
 
         let index = ongoing_processes
@@ -84,6 +106,11 @@ impl ProcessManager {
 
         if let Some(index) = index {
             let process = ongoing_processes.swap_remove(index);
+
+            // Drop the lock first to avoid deadlock
+            drop(ongoing_processes);
+            self.stopping_commands.lock().await.push(command_id);
+            send_command_update_event(&self.app_handle, command_id)?;
 
             // Stop waiting for the process to finish first, otherwise we will deadlock!
             process.status_join_handle.abort();
@@ -125,7 +152,7 @@ impl ProcessManager {
             if let Some(join_handle) = process.output_join_handle.lock().await.take() {
                 debug!("Got output join handle, waiting for output...");
 
-                // Only wait for output for 1 sec, if we kill it not cleanly, the output might get stuck
+                // Only wait for output for 1 sec, if we don't kill it cleanly, the output might get stuck
                 select! {
                     _ = sleep(Duration::from_secs(1)) => {}
                     _ = join_handle => {}
@@ -150,6 +177,13 @@ impl ProcessManager {
 
             debug!("Created kill command log line");
 
+            self.stopping_commands
+                .lock()
+                .await
+                .retain(|c| *c != command_id);
+
+            debug!("Removed command from stopping commands");
+
             send_command_log_update_event(&self.app_handle, command_id)?;
             send_command_update_event(&self.app_handle, command_id)?;
 
@@ -159,7 +193,7 @@ impl ProcessManager {
         Ok(())
     }
 
-    pub async fn run_process(&mut self, command: command::Data) -> Result<(), AppCommandError> {
+    pub async fn run_process(&self, command: command::Data) -> Result<(), AppCommandError> {
         let mut child = Command::new("bash")
             .args(&["-c", &command.command])
             .current_dir(command.cwd.clone())
