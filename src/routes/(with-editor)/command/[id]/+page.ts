@@ -7,11 +7,13 @@ export async function load({ params, depends }) {
   if (!command) {
     throw error(404, 'Command not found');
   }
+  const isProcessRunning = await appAPI(depends).isProcessRunning(command.id);
 
   const initialCommandLogLines = await appAPI(depends).getCommandLogLines(command.id);
 
   return {
     command,
+    isProcessRunning,
     initialCommandLogLines,
   };
 }

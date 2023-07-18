@@ -6,29 +6,38 @@ mod prisma;
 
 mod errors;
 mod events;
+mod process;
 
 use std::{path::MAIN_SEPARATOR, sync::Arc, vec};
 
-use errors::AppCommandError;
+use errors::{AppCommandError, ClientError};
 use events::{send_command_update_event, AppEventPayload};
 use prisma::*;
 
 use prisma_client_rust::{Direction, QueryError};
+use process::ProcessManager;
 use serde::Serialize;
 use specta::{collect_types, Type};
 use tauri::{api::path::home_dir, generate_handler, AppHandle, LogicalSize, Manager, Size, Window};
 use tauri_specta::ts;
+use tokio::sync::Mutex;
 
 type AppState<'a> = tauri::State<'a, Arc<AppStateData>>;
 
 struct AppStateData {
-    client: PrismaClient,
+    client: Arc<PrismaClient>,
+    process_manager: Mutex<ProcessManager>,
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn get_commands(state: AppState<'_>) -> Result<Vec<command::Data>, QueryError> {
-    state.client.command().find_many(vec![]).exec().await
+    state
+        .client
+        .command()
+        .find_many(vec![])
+        .exec()
+        .await
 }
 
 #[tauri::command]
@@ -72,6 +81,10 @@ async fn get_newer_command_log_lines(
     command_id: i32,
     last_id: i32,
 ) -> Result<Vec<command_log_line::Data>, QueryError> {
+    if last_id == 0 {
+        return get_command_log_lines(state, command_id).await;
+    }
+
     state
         .client
         .command_log_line()
@@ -105,7 +118,7 @@ async fn update_command(
         .exec()
         .await?;
 
-    send_command_update_event(app, command_id)?;
+    send_command_update_event(&app, command_id)?;
 
     Ok(result)
 }
@@ -124,7 +137,7 @@ async fn delete_command(
         .exec()
         .await?;
 
-    send_command_update_event(app, command_id)?;
+    send_command_update_event(&app, command_id)?;
 
     Ok(result)
 }
@@ -147,7 +160,7 @@ async fn create_command(
         .exec()
         .await?;
 
-    send_command_update_event(app, result.id)?;
+    send_command_update_event(&app, result.id)?;
 
     Ok(result)
 }
@@ -156,6 +169,46 @@ async fn create_command(
 #[specta::specta]
 fn set_window_size(window: Window, width: f64, height: f64) -> Result<(), tauri::Error> {
     window.set_size(Size::Logical(LogicalSize { width, height }))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn is_process_running(state: AppState<'_>, command_id: i32) -> Result<bool, AppCommandError> {
+    state
+        .process_manager
+        .lock()
+        .await
+        .check_process_running(command_id)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn run_process(state: AppState<'_>, command_id: i32) -> Result<(), AppCommandError> {
+    let command = state
+        .client
+        .command()
+        .find_unique(command::id::equals(command_id))
+        .exec()
+        .await?;
+
+    match command {
+        Some(command) => {
+            state.process_manager.lock().await.run_process(command)?;
+            Ok(())
+        }
+        None => Err(AppCommandError::ClientError(ClientError::CommandNotFound)),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn kill_process(state: AppState<'_>, command_id: i32) -> Result<(), AppCommandError> {
+    state
+        .process_manager
+        .lock()
+        .await
+        .kill_process(command_id)
+        .await
 }
 
 #[derive(Type, Serialize)]
@@ -187,6 +240,9 @@ async fn main() {
             get_platform_details,
             get_command_log_lines,
             get_newer_command_log_lines,
+            is_process_running,
+            run_process,
+            kill_process,
         ],
         "../src/lib/bindings.ts",
     )
@@ -210,13 +266,22 @@ async fn main() {
         .await
         .expect("Database migration should succeed");
 
-    let state = AppStateData { client: db_client };
-
     tauri::Builder::default()
-        .manage(Arc::new(state))
         .setup(|app| {
             #[cfg(debug_assertions)]
             app.get_window("main").unwrap().open_devtools();
+
+            let client_arc = Arc::new(db_client);
+
+            let process_manager =
+                ProcessManager::new(Arc::new(app.app_handle()), Arc::clone(&client_arc));
+
+            let state = AppStateData {
+                client: client_arc,
+                process_manager: Mutex::new(process_manager),
+            };
+
+            app.manage(Arc::new(state));
 
             Ok(())
         })
@@ -229,7 +294,10 @@ async fn main() {
             delete_command,
             get_platform_details,
             get_command_log_lines,
-            get_newer_command_log_lines
+            get_newer_command_log_lines,
+            is_process_running,
+            run_process,
+            kill_process,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

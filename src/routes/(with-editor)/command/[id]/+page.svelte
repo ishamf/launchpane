@@ -11,13 +11,14 @@
   import Icon from '$lib/components/Icon.svelte';
   import { CommandStatus } from '$lib/types';
   import { getLogLinesStore } from './utils';
+  import { isProcessRunning } from '$lib/bindings';
 
   export let data: PageData;
 
   $: command = data.command;
 
   let logLines = getLogLinesStore(data.command.id, data.initialCommandLogLines);
-  let logLinesId = data.command.id
+  let logLinesId = data.command.id;
 
   $: {
     if (command && logLinesId !== command.id) {
@@ -26,11 +27,9 @@
     }
   }
 
-  $: statusText = command.status === CommandStatus.Running ? 'Running' : 'Stopped';
+  $: statusText = data.isProcessRunning ? 'Running' : 'Stopped';
 
-  $: commandLogLines = $logLines
-    .map((l) => l.line.replace(/\n$/, ''))
-    .join('\n');
+  $: commandLogLines = $logLines.map((l) => l.line.replace(/\n$/, '')).join('\n');
 
   async function saveChanges() {
     const { name, command: cmd, cwd } = command;
@@ -90,12 +89,12 @@
     <p class="flex-1">
       Status: {statusText}
     </p>
-    {#if command.status === CommandStatus.Stopped}
+    {#if !data.isProcessRunning}
       <Button
         icon="play"
         title="Start"
         on:click={async () => {
-          await appAPI().runCommand(command.id);
+          await appAPI().runProcess(command.id);
         }}
       />
     {:else}
@@ -103,7 +102,7 @@
         icon="stop"
         title="Stop"
         on:click={async () => {
-          console.log(await appAPI().sendSignalToCommand(command.id, 'SIGTERM'));
+          console.log(await appAPI().killProcess(command.id));
         }}
       />
     {/if}

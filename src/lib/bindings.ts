@@ -46,7 +46,19 @@ export function getNewerCommandLogLines(commandId: number, lastId: number) {
     return invoke()<CommandLogLine[]>("get_newer_command_log_lines", { commandId,lastId })
 }
 
-export type PlatformDetails = { path_separator: string }
+export function isProcessRunning(commandId: number) {
+    return invoke()<boolean>("is_process_running", { commandId })
+}
+
+export function runProcess(commandId: number) {
+    return invoke()<null>("run_process", { commandId })
+}
+
+export function killProcess(commandId: number) {
+    return invoke()<null>("kill_process", { commandId })
+}
+
 export type Command = { id: number; name: string; cwd: string; command: string; lastRunResultType: string | null; lastRunCode: string | null }
-export type CommandUpdateData = { name?: string | null; cwd?: string | null; command?: string | null }
+export type PlatformDetails = { path_separator: string }
 export type CommandLogLine = { id: number; commandId: number; source: number; line: string; timestamp: number }
+export type CommandUpdateData = { name?: string | null; cwd?: string | null; command?: string | null }
