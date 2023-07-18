@@ -32,12 +32,7 @@ struct AppStateData {
 #[tauri::command]
 #[specta::specta]
 async fn get_commands(state: AppState<'_>) -> Result<Vec<command::Data>, QueryError> {
-    state
-        .client
-        .command()
-        .find_many(vec![])
-        .exec()
-        .await
+    state.client.command().find_many(vec![]).exec().await
 }
 
 #[tauri::command]
@@ -179,6 +174,7 @@ async fn is_process_running(state: AppState<'_>, command_id: i32) -> Result<bool
         .lock()
         .await
         .check_process_running(command_id)
+        .await
 }
 
 #[tauri::command]
@@ -193,7 +189,7 @@ async fn run_process(state: AppState<'_>, command_id: i32) -> Result<(), AppComm
 
     match command {
         Some(command) => {
-            state.process_manager.lock().await.run_process(command)?;
+            state.process_manager.lock().await.run_process(command).await?;
             Ok(())
         }
         None => Err(AppCommandError::ClientError(ClientError::CommandNotFound)),
@@ -228,6 +224,8 @@ fn get_platform_details() -> PlatformDetails {
 async fn main() {
     tauri::async_runtime::set(tokio::runtime::Handle::current());
 
+    env_logger::init();
+
     #[cfg(debug_assertions)]
     ts::export(
         collect_types![
@@ -256,7 +254,7 @@ async fn main() {
     };
 
     let db_client: PrismaClient = PrismaClient::_builder()
-        .with_url("file:./app.db".into())
+        .with_url("file:./app.db?connection_limit=1".into())
         .build()
         .await
         .expect("Database should be accessible");

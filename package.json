@@ -5,7 +5,8 @@
   "packageManager": "pnpm@8.6.6",
   "main": ".app/build/server/main.js",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "RUST_LOG='app=debug' tauri dev",
+    "dev:ui": "vite dev",
     "build": "vite build",
     "tauri": "tauri",
     "preview": "vite preview",

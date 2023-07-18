@@ -17,10 +17,15 @@ export const appAPI = (depends?: (id: string) => void) =>
 
           console.debug('Calling API function', prop, args);
           const prev = performance.now();
-          // @ts-expect-error typechecked by proxy type
-          const result = await bindingsApi[prop](...args);
-          console.debug('Called API function', prop, args, result, performance.now() - prev);
-          return result;
+          try {
+            // @ts-expect-error typechecked by proxy type
+            const result = await bindingsApi[prop](...args);
+            console.debug('Called API function', prop, args, result, performance.now() - prev);
+            return result;
+          } catch (e) {
+            console.error('Failed to call function', e);
+            throw e;
+          }
         };
       },
     },

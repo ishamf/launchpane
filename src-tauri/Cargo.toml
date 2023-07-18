@@ -31,6 +31,8 @@ specta = {version = "1.0.4", features = ["typescript"] }
 async-process = "1.7.0"
 futures-lite = "1.13.0"
 nix = {version = "0.26.2", features = ["signal"] }
+log = "0.4.19"
+env_logger = "0.10.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

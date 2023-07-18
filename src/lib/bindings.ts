@@ -59,6 +59,6 @@ export function killProcess(commandId: number) {
 }
 
 export type Command = { id: number; name: string; cwd: string; command: string; lastRunResultType: string | null; lastRunCode: string | null }
-export type PlatformDetails = { path_separator: string }
 export type CommandLogLine = { id: number; commandId: number; source: number; line: string; timestamp: number }
+export type PlatformDetails = { path_separator: string }
 export type CommandUpdateData = { name?: string | null; cwd?: string | null; command?: string | null }

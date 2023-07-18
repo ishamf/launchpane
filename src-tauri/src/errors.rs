@@ -1,4 +1,4 @@
-use std::{io, time::SystemTimeError};
+use std::{io, time::SystemTimeError, sync::PoisonError};
 
 use nix::errno::Errno;
 use prisma_client_rust::QueryError;
@@ -14,6 +14,7 @@ pub enum AppCommandError {
     SystemTimeError(String),
     NixError(i32),
     JoinError(String),
+    PoisonError(String),
 }
 
 #[derive(Debug, Serialize)]
@@ -54,5 +55,11 @@ impl From<Errno> for AppCommandError {
 impl From<JoinError> for AppCommandError {
     fn from(err: JoinError) -> Self {
         Self::JoinError(err.to_string())
+    }
+}
+
+impl<T> From<PoisonError<T>> for AppCommandError {
+    fn from(err: PoisonError<T>) -> Self {
+        Self::PoisonError(err.to_string())
     }
 }
