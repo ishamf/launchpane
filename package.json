@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "packageManager": "pnpm@8.6.6",
-  "main": ".app/build/server/main.js",
   "scripts": {
     "dev": "RUST_LOG='app=debug' tauri dev",
     "dev:ui": "vite dev",
