@@ -23,7 +23,7 @@ use async_process::{Child, Command, Stdio};
 use futures_lite::{io::BufReader, AsyncBufReadExt, StreamExt};
 use tokio::{spawn, task::JoinHandle, try_join};
 
-use log::{debug, error};
+use log::{debug, error, trace};
 
 use crate::{
     errors::{AppCommandError, ClientError},
@@ -228,7 +228,7 @@ impl ProcessManager {
                 let mut lines = BufReader::new(stdout).lines();
 
                 while let Some(line) = lines.try_next().await? {
-                    debug!("{} stdout: {}", command.id, line);
+                    trace!("{} stdout: {}", command.id, line);
                     db.command_log_line()
                         .create(
                             command::id::equals(command.id),
@@ -239,7 +239,7 @@ impl ProcessManager {
                         )
                         .exec()
                         .await?;
-                    debug!("Written to db");
+                    trace!("Written to db");
                     send_command_log_update_event(&app_handle, command.id)?;
                 }
 

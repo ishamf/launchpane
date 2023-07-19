@@ -11,23 +11,23 @@
   import Icon from '$lib/components/Icon.svelte';
   import { getLogLinesStore } from './utils';
 
+  import Console from '$lib/components/Console.svelte';
+
   export let data: PageData;
 
   $: command = data.command;
 
   let logLines = getLogLinesStore(data.command.id, data.initialCommandLogLines);
-  let logLinesId = data.command.id;
+  let currentCommandId = data.command.id;
 
   $: {
-    if (command && logLinesId !== command.id) {
+    if (command && currentCommandId !== command.id) {
       logLines = getLogLinesStore(command.id, data.initialCommandLogLines);
-      logLinesId = command.id;
+      currentCommandId = command.id;
     }
   }
 
   $: statusText = data.processStatus;
-
-  $: commandLogLines = $logLines.map((l) => l.line.replace(/\n$/, '')).join('\n');
 
   async function saveChanges() {
     const { name, command: cmd, cwd } = command;
@@ -106,8 +106,9 @@
     {/if}
   </div>
 
-  <pre
-    class="flex-1 bg-zinc-700 mx-4 mb-4 p-4 text-white font-mono overflow-auto text-sm">{commandLogLines}</pre>
+  {#key command.id}
+    <Console logLines={$logLines} />
+  {/key}
 </div>
 
 <style lang="postcss">

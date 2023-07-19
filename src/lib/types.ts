@@ -1,5 +1,4 @@
-export type { Command } from './generated/bindings';
-import type { CommandLogLine } from './generated/bindings';
+export type { Command, CommandLogLine } from './generated/bindings';
 
 export enum WindowState {
   List = 0,
@@ -18,7 +17,7 @@ export enum CommandStatus {
   Running = 1,
 }
 
-export type CommandLogLines = CommandLogLine[];
+
 
 export type DataUpdateEvent =
   | {
