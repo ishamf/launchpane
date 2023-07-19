@@ -45,6 +45,8 @@ fn timestamp() -> Result<f64, SystemTimeError> {
     Ok(nanos as f64 / 1000000.0)
 }
 
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 struct OngoingProcess {
     command_id: i32,
     child: Arc<Mutex<Child>>,
@@ -143,6 +145,19 @@ impl ProcessManager {
                 }
             }
 
+            #[cfg(target_family = "windows")]
+            {
+                // Use taskkill to kill the process tree
+                let status = Command::new("taskkill")
+                    .args(&["/pid", &child.id().to_string(), "/t", "/f"])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .spawn()?
+                    .status()
+                    .await?;
+
+                debug!("Taskkill status: {}", status);
+            }
+
             // Check if the child process is still running
             if child.try_status()?.is_none() {
                 #[cfg(target_family = "unix")]
@@ -205,6 +220,8 @@ impl ProcessManager {
             cmd.arg("/c");
 
             cmd.raw_arg(command.command.clone());
+
+            cmd.creation_flags(CREATE_NO_WINDOW);
 
             cmd
         } else {
