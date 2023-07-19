@@ -26,7 +26,7 @@ use tokio::{spawn, task::JoinHandle, try_join};
 use log::{debug, error, trace};
 
 use crate::{
-    errors::{AppCommandError, ClientError},
+    errors::AppCommandError,
     events::{send_command_log_update_event, send_command_update_event},
     prisma::{_prisma::PrismaClient, command},
 };
@@ -331,7 +331,7 @@ impl ProcessManager {
 
                 debug!("Removed process from ongoing processes");
 
-                let command_exit_log = format!("Command exited with status {}", status);
+                let command_exit_log = format!("Command finished with {}", status);
                 db.command_log_line()
                     .create(
                         command::id::equals(command.id),
