@@ -10,6 +10,9 @@ use nix::{
     unistd::Pid,
 };
 
+#[cfg(target_family = "windows")]
+use async_process::windows::CommandExt;
+
 use serde::Serialize;
 use specta::Type;
 use tauri::AppHandle;
@@ -23,7 +26,7 @@ use tokio::{spawn, task::JoinHandle, try_join};
 use log::{debug, error};
 
 use crate::{
-    errors::AppCommandError,
+    errors::{AppCommandError, ClientError},
     events::{send_command_log_update_event, send_command_update_event},
     prisma::{_prisma::PrismaClient, command},
 };
@@ -196,12 +199,26 @@ impl ProcessManager {
     }
 
     pub async fn run_process(&self, command: command::Data) -> Result<(), AppCommandError> {
-        let mut child = Command::new("bash")
-            .args(&["-c", &command.command])
-            .current_dir(command.cwd.clone())
+        let mut cmd = if cfg!(target_family = "windows") {
+            let mut cmd = Command::new("cmd");
+            cmd.arg("/s");
+            cmd.arg("/c");
+
+            cmd.raw_arg(command.command.clone());
+
+            cmd
+        } else {
+            let mut cmd = Command::new("bash");
+            cmd.arg("-c").arg(&command.command);
+            cmd
+        };
+
+        cmd.current_dir(command.cwd.clone())
+            .stdin(Stdio::null())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+            .stderr(Stdio::piped());
+
+        let mut child = cmd.spawn()?;
 
         let out_process = {
             let db = Arc::clone(&self.db_client);
@@ -211,6 +228,7 @@ impl ProcessManager {
                 let mut lines = BufReader::new(stdout).lines();
 
                 while let Some(line) = lines.try_next().await? {
+                    debug!("{} stdout: {}", command.id, line);
                     db.command_log_line()
                         .create(
                             command::id::equals(command.id),
@@ -221,8 +239,11 @@ impl ProcessManager {
                         )
                         .exec()
                         .await?;
+                    debug!("Written to db");
                     send_command_log_update_event(&app_handle, command.id)?;
                 }
+
+                debug!("Stdout finished");
 
                 Ok::<(), AppCommandError>(())
             }
@@ -236,6 +257,7 @@ impl ProcessManager {
                 let mut lines = BufReader::new(stderr).lines();
 
                 while let Some(line) = lines.try_next().await? {
+                    debug!("{} stderr: {}", command.id, line);
                     db.command_log_line()
                         .create(
                             command::id::equals(command.id),
@@ -246,8 +268,11 @@ impl ProcessManager {
                         )
                         .exec()
                         .await?;
+                    debug!("Written to db");
                     send_command_log_update_event(&app_handle, command.id)?;
                 }
+
+                debug!("Stderr finished");
 
                 Ok::<(), AppCommandError>(())
             }
