@@ -274,7 +274,7 @@ impl ProcessManager {
                 let mut lines = BufReader::new(stderr).lines();
 
                 while let Some(line) = lines.try_next().await? {
-                    debug!("{} stderr: {}", command.id, line);
+                    trace!("{} stderr: {}", command.id, line);
                     db.command_log_line()
                         .create(
                             command::id::equals(command.id),
@@ -285,7 +285,7 @@ impl ProcessManager {
                         )
                         .exec()
                         .await?;
-                    debug!("Written to db");
+                    trace!("Written to db");
                     send_command_log_update_event(&app_handle, command.id)?;
                 }
 

@@ -1,9 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import type { AppAPIType } from '$lib/api';
   import type { Command } from '$lib/types';
   import { getCommandDescriptor, showCommandTitleWithMonospace } from '$lib/utils';
-  import type { Prisma } from '@prisma/client';
 
   export let command: Command;
 

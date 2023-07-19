@@ -12,8 +12,15 @@
   import { CommandLineSource, type CommandLogLine } from '$lib/types';
   import { afterUpdate, onMount } from 'svelte';
   import { format } from 'date-fns';
+  import ansiToHtml from 'ansi-to-html';
 
   export let logLines: CommandLogLine[];
+
+  let ansiToHtmlConverter = new ansiToHtml({
+    fg: 'inherit',
+    bg: 'transparent',
+    escapeXML: true,
+  });
 
   let consoleDiv: HTMLDivElement;
   let isCurrentlyScrolledToBottom = true;
@@ -67,12 +74,14 @@
     <div class="text-right select-none text-zinc-400">
       {format(new Date(logLine.timestamp), dateFormatString)}
     </div>
+    <div class="text-red-800">
+      {logLine.source === CommandLineSource.STDERR ? 'E' : ''}
+    </div>
     <div
       class="whitespace-pre-wrap min-w-0"
-      class:text-red-500={logLine.source === CommandLineSource.STDERR}
       class:text-zinc-400={logLine.source === CommandLineSource.INFO}
     >
-      {logLine.line}
+      {@html ansiToHtmlConverter.toHtml(logLine.line)}
     </div>
   {/each}
 </div>
@@ -81,6 +90,6 @@
   .cli-grid {
     @apply grid gap-x-2;
 
-    grid: auto / auto 1fr;
+    grid: auto / auto auto 1fr;
   }
 </style>

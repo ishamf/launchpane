@@ -1,12 +1,12 @@
 import { appAPI, onNewLogLines } from '$lib/api';
 import { readable } from 'svelte/store';
 import { Mutex } from 'async-mutex';
-import type { CommandLogLines } from '$lib/types';
+import type { CommandLogLine } from '$lib/types';
 import { debounce } from 'lodash-es';
 
-export function getLogLinesStore(commandId: number, initialCommandLogLines: CommandLogLines) {
+export function getLogLinesStore(commandId: number, initialCommandLogLines: CommandLogLine[]) {
   console.debug('Created log lines store', commandId);
-  const store = readable(initialCommandLogLines as CommandLogLines, (set, update) => {
+  const store = readable(initialCommandLogLines as CommandLogLine[], (set, update) => {
     console.debug('Subscribed to log lines store', commandId);
     const mutex = new Mutex();
     let lastLogId = 0;
