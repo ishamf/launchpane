@@ -1,6 +1,8 @@
 use std::{io, time::SystemTimeError, sync::PoisonError};
 
+#[cfg(target_family = "unix")]
 use nix::errno::Errno;
+
 use prisma_client_rust::QueryError;
 use serde::Serialize;
 use tokio::task::JoinError;
@@ -12,9 +14,11 @@ pub enum AppCommandError {
     TauriError(String),
     IoError(String),
     SystemTimeError(String),
-    NixError(i32),
     JoinError(String),
     PoisonError(String),
+
+    #[cfg(target_family = "unix")]
+    NixError(i32),
 }
 
 #[derive(Debug, Serialize)]
@@ -46,6 +50,7 @@ impl From<SystemTimeError> for AppCommandError {
     }
 }
 
+#[cfg(target_family = "unix")]
 impl From<Errno> for AppCommandError {
     fn from(err: Errno) -> Self {
         Self::NixError(err as i32)

@@ -4,10 +4,12 @@ use std::{
     time::{SystemTime, SystemTimeError},
 };
 
+#[cfg(target_family = "unix")]
 use nix::{
     sys::signal::{kill, Signal},
     unistd::Pid,
 };
+
 use serde::Serialize;
 use specta::Type;
 use tauri::AppHandle;

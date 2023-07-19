@@ -4,15 +4,17 @@
   "private": true,
   "packageManager": "pnpm@8.6.6",
   "scripts": {
-    "dev": "RUST_LOG='app=debug' tauri dev",
+    "dev": "cross-env RUST_LOG=\"app=debug\" tauri dev",
     "dev:ui": "vite dev",
-    "build": "vite build",
+    "build:ui": "vite build",
+    "build": "tauri build",
     "tauri": "tauri",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest",
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
+    "prepare": "cd src-tauri && cargo prisma generate",
     "format": "prettier --plugin-search-dir . --write ."
   },
   "devDependencies": {
@@ -24,6 +26,7 @@
     "@typescript-eslint/parser": "^5.45.0",
     "autoprefixer": "^10.4.14",
     "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-svelte": "^2.30.0",
