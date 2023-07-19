@@ -90,6 +90,8 @@
   .cli-grid {
     @apply grid gap-x-2;
 
-    grid: auto / auto auto 1fr;
+    grid-template-columns: auto auto 1fr;
+    grid-auto-rows: min-content;
+    align-content: safe end;
   }
 </style>
