@@ -1,7 +1,5 @@
-import type { Prisma } from '@prisma/client';
-import type { AppAPIType } from './api';
-
 export type { Command } from './generated/bindings';
+import type { CommandLogLine } from './generated/bindings';
 
 export enum WindowState {
   List = 0,
@@ -20,7 +18,7 @@ export enum CommandStatus {
   Running = 1,
 }
 
-export type CommandLogLines = any[];
+export type CommandLogLines = CommandLogLine[];
 
 export type DataUpdateEvent =
   | {
