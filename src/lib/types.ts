@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import type { AppAPIType } from './api';
 
-export type { Command } from './bindings';
+export type { Command } from './generated/bindings';
 
 export enum WindowState {
   List = 0,

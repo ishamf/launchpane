@@ -167,11 +167,11 @@ fn set_window_size(window: Window, width: f64, height: f64) -> Result<(), tauri:
 
 #[tauri::command]
 #[specta::specta]
-async fn get_process_status(state: AppState<'_>, command_id: i32) -> Result<ProcessStatus, AppCommandError> {
-    state
-        .process_manager
-        .check_process_status(command_id)
-        .await
+async fn get_process_status(
+    state: AppState<'_>,
+    command_id: i32,
+) -> Result<ProcessStatus, AppCommandError> {
+    state.process_manager.check_process_status(command_id).await
 }
 
 #[tauri::command]
@@ -212,13 +212,8 @@ fn get_platform_details() -> PlatformDetails {
     }
 }
 
-#[tokio::main]
-async fn main() {
-    tauri::async_runtime::set(tokio::runtime::Handle::current());
-
-    env_logger::init();
-
-    #[cfg(debug_assertions)]
+fn export_types() {
+    // Export tauri-specta
     ts::export(
         collect_types![
             get_commands,
@@ -234,16 +229,30 @@ async fn main() {
             run_process,
             kill_process,
         ],
-        "../src/lib/bindings.ts",
+        "../src/lib/generated/bindings.ts",
     )
     .unwrap();
 
-    #[cfg(debug_assertions)]
-    {
-        let app_event_type = specta::ts::export::<AppEventPayload>(&Default::default()).unwrap();
+    // Export custom events
 
-        std::fs::write("../src/lib/events.ts", app_event_type).unwrap();
-    };
+    let app_event_type = specta::ts::export::<AppEventPayload>(&Default::default()).unwrap();
+
+    std::fs::write("../src/lib/generated/events.ts", app_event_type).unwrap();
+}
+
+#[test]
+fn export_types_runner() {
+    export_types();
+}
+
+#[tokio::main]
+async fn main() {
+    tauri::async_runtime::set(tokio::runtime::Handle::current());
+
+    env_logger::init();
+
+    #[cfg(debug_assertions)]
+    export_types();
 
     let db_client: PrismaClient = PrismaClient::_builder()
         .with_url("file:./app.db?connection_limit=1".into())

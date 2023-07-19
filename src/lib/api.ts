@@ -1,5 +1,5 @@
-import * as bindingsApi from './bindings';
-import type { AppEventPayload } from './events';
+import * as bindingsApi from './generated/bindings';
+import type { AppEventPayload } from './generated/events';
 import { listen, type Event } from '@tauri-apps/api/event';
 
 export type AppAPIType = typeof bindingsApi;
