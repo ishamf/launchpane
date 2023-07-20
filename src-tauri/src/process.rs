@@ -156,11 +156,16 @@ impl ProcessManager {
                     .await?;
 
                 debug!("Taskkill status: {}", status);
+
+                if child.try_status()?.is_none() {
+                    debug!("Child process is still running, waiting a bit");
+
+                    sleep(Duration::from_secs(3)).await;
+                }
             }
 
             // Check if the child process is still running
             if child.try_status()?.is_none() {
-                #[cfg(target_family = "unix")]
                 debug!("Child process is still running, killing it");
 
                 // Send SIGKILL to the child process
@@ -215,15 +220,27 @@ impl ProcessManager {
 
     pub async fn run_process(&self, command: command::Data) -> Result<(), AppCommandError> {
         let mut cmd = if cfg!(target_family = "windows") {
-            let mut cmd = Command::new("cmd");
-            cmd.arg("/s");
-            cmd.arg("/c");
+            // Powershell is significantly slower, but you have to use it to run commands on
+            // these kinds of paths
+            if command.cwd.starts_with("\\\\") {
+                let mut cmd = Command::new("powershell");
+                cmd.arg("-Command");
+                cmd.arg(command.command.clone());
 
-            cmd.raw_arg(command.command.clone());
+                cmd.creation_flags(CREATE_NO_WINDOW);
 
-            cmd.creation_flags(CREATE_NO_WINDOW);
+                cmd
+            } else {
+                let mut cmd = Command::new("cmd");
+                cmd.arg("/s");
+                cmd.arg("/c");
 
-            cmd
+                cmd.raw_arg(command.command.clone());
+
+                cmd.creation_flags(CREATE_NO_WINDOW);
+
+                cmd
+            }
         } else {
             let mut cmd = Command::new("bash");
             cmd.arg("-c").arg(&command.command);
