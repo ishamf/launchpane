@@ -1,4 +1,4 @@
-export type { Command, CommandLogLine } from './generated/bindings';
+export type { Command, CommandLogLine, ProcessStatus } from './generated/bindings';
 
 export enum WindowState {
   List = 0,
@@ -10,11 +10,6 @@ export enum CommandLineSource {
   STDERR = 2,
 
   INFO = 3,
-}
-
-export enum CommandStatus {
-  Stopped = 0,
-  Running = 1,
 }
 
 

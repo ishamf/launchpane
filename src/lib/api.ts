@@ -46,6 +46,12 @@ export const onDataUpdate = (callback: (data: Event<AppEventPayload>) => void) =
   return () => removePromise.then((remove) => remove());
 };
 
+export const onCommandUpdate = (commandId: number, callback: () => void) => 
+  onDataUpdate((data) => {
+    if ('CommandUpdateEvent' in data.payload && data.payload.CommandUpdateEvent === commandId)
+      callback();
+  });
+
 export const onNewLogLines = (commandId: number, callback: () => void) =>
   onDataUpdate((data) => {
     if ('CommandLogUpdateEvent' in data.payload && data.payload.CommandLogUpdateEvent === commandId)

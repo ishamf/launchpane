@@ -46,7 +46,7 @@ export function getLogLinesStore(commandId: number, initialCommandLogLines: Comm
   });
 
   function loadMore() {
-    console.log('Loading more logs, from', firstLogId)
+    console.debug('Loading more logs, from', firstLogId)
     if (!firstLogId) return;
 
     mutex.runExclusive(async () => {

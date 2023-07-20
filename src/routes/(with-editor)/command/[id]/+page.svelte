@@ -100,7 +100,7 @@
         icon="stop"
         title="Stop"
         on:click={async () => {
-          console.log(await appAPI().killProcess(command.id));
+          await appAPI().killProcess(command.id);
         }}
       />
     {/if}
