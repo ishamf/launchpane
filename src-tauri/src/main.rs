@@ -7,12 +7,14 @@ mod prisma;
 mod errors;
 mod events;
 mod process;
+mod utils;
 
 use std::{path::MAIN_SEPARATOR, sync::Arc, vec};
 
 use errors::{AppCommandError, ClientError};
 use events::{send_command_update_event, AppEventPayload};
 use prisma::*;
+use utils::trace_elapsed_time;
 
 use prisma_client_rust::{Direction, QueryError};
 use process::{ProcessManager, ProcessStatus};
@@ -40,12 +42,14 @@ async fn get_command(
     state: AppState<'_>,
     command_id: i32,
 ) -> Result<Option<command::Data>, QueryError> {
-    state
-        .client
-        .command()
-        .find_unique(command::id::equals(command_id))
-        .exec()
-        .await
+    trace_elapsed_time("get_command", || {
+        state
+            .client
+            .command()
+            .find_unique(command::id::equals(command_id))
+            .exec()
+    })
+    .await
 }
 
 #[tauri::command]
@@ -54,18 +58,51 @@ async fn get_command_log_lines(
     state: AppState<'_>,
     command_id: i32,
 ) -> Result<Vec<command_log_line::Data>, QueryError> {
-    let mut log_lines = state
-        .client
-        .command_log_line()
-        .find_many(vec![command_log_line::command_id::equals(command_id)])
-        .order_by(command_log_line::timestamp::order(Direction::Desc))
-        .take(1000)
-        .exec()
-        .await?;
+    trace_elapsed_time("get_command_log_lines", || async {
+        let mut log_lines = state
+            .client
+            .command_log_line()
+            .find_many(vec![command_log_line::command_id::equals(command_id)])
+            .order_by(command_log_line::timestamp::order(Direction::Desc))
+            .take(100)
+            .exec()
+            .await?;
 
-    log_lines.reverse();
+        log_lines.reverse();
 
-    Ok(log_lines)
+        Ok(log_lines)
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_older_command_log_lines(
+    state: AppState<'_>,
+    command_id: i32,
+    first_id: i32,
+) -> Result<Vec<command_log_line::Data>, AppCommandError> {
+    trace_elapsed_time("get_older_command_log_lines", || async {
+        if first_id == 0 {
+            return Err(AppCommandError::ClientError(ClientError::InvalidCommandId));
+        }
+
+        let mut log_lines = state
+            .client
+            .command_log_line()
+            .find_many(vec![command_log_line::command_id::equals(command_id)])
+            .order_by(command_log_line::timestamp::order(Direction::Desc))
+            .cursor(command_log_line::id::equals(first_id))
+            .skip(1)
+            .take(100)
+            .exec()
+            .await?;
+
+        log_lines.reverse();
+
+        Ok(log_lines)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -75,20 +112,23 @@ async fn get_newer_command_log_lines(
     command_id: i32,
     last_id: i32,
 ) -> Result<Vec<command_log_line::Data>, QueryError> {
-    if last_id == 0 {
-        return get_command_log_lines(state, command_id).await;
-    }
+    trace_elapsed_time("get_newer_command_log_lines", || async {
+        if last_id == 0 {
+            return get_command_log_lines(state, command_id).await;
+        }
 
-    state
-        .client
-        .command_log_line()
-        .find_many(vec![command_log_line::command_id::equals(command_id)])
-        .order_by(command_log_line::timestamp::order(Direction::Asc))
-        .cursor(command_log_line::id::equals(last_id))
-        .skip(1)
-        .take(1000)
-        .exec()
-        .await
+        state
+            .client
+            .command_log_line()
+            .find_many(vec![command_log_line::command_id::equals(command_id)])
+            .order_by(command_log_line::timestamp::order(Direction::Asc))
+            .cursor(command_log_line::id::equals(last_id))
+            .skip(1)
+            .take(10000)
+            .exec()
+            .await
+    })
+    .await
 }
 
 command::partial_unchecked!(CommandUpdateData {
@@ -225,6 +265,7 @@ fn export_types() {
             get_platform_details,
             get_command_log_lines,
             get_newer_command_log_lines,
+            get_older_command_log_lines,
             get_process_status,
             run_process,
             kill_process,
@@ -294,6 +335,7 @@ async fn main() {
             get_platform_details,
             get_command_log_lines,
             get_newer_command_log_lines,
+            get_older_command_log_lines,
             get_process_status,
             run_process,
             kill_process,

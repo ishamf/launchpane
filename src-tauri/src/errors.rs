@@ -24,6 +24,7 @@ pub enum AppCommandError {
 #[derive(Debug, Serialize)]
 pub enum ClientError {
     CommandNotFound,
+    InvalidCommandId,
 }
 
 impl From<QueryError> for AppCommandError {

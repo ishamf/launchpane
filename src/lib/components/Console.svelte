@@ -6,11 +6,13 @@
   ];
 
   const defaultFormat = 'HH:mm:ss.SSS';
+
+  const heightToTriggerLoadMore = 100;
 </script>
 
 <script lang="ts">
   import { CommandLineSource, type CommandLogLine } from '$lib/types';
-  import { afterUpdate, onMount } from 'svelte';
+  import { afterUpdate, createEventDispatcher, onMount } from 'svelte';
   import { format } from 'date-fns';
   import ansiToHtml from 'ansi-to-html';
 
@@ -26,6 +28,18 @@
   let isCurrentlyScrolledToBottom = true;
 
   let dateFormatString = defaultFormat;
+
+  const dispatch = createEventDispatcher();
+
+  let hasSentLoadMore = false;
+  let firstLogIdWhenSentLoadMore = logLines[0]?.id;
+
+  $: {
+    if (logLines[0]?.id !== firstLogIdWhenSentLoadMore) {
+      hasSentLoadMore = false;
+      firstLogIdWhenSentLoadMore = logLines[0]?.id;
+    }
+  }
 
   $: {
     if (logLines.length < 2) {
@@ -52,8 +66,17 @@
   }
 
   function onScroll() {
+    const scrollTop = consoleDiv.scrollTop;
+
     isCurrentlyScrolledToBottom =
-      Math.abs(consoleDiv.scrollHeight - consoleDiv.clientHeight - consoleDiv.scrollTop) < 1;
+      Math.abs(consoleDiv.scrollHeight - consoleDiv.clientHeight - scrollTop) < 1;
+
+    if (scrollTop < heightToTriggerLoadMore) {
+      if (!hasSentLoadMore) {
+        hasSentLoadMore = true;
+        dispatch('load-more');
+      }
+    }
   }
 
   onMount(() => {
@@ -74,7 +97,7 @@
     <div class="text-right select-none text-zinc-400">
       {format(new Date(logLine.timestamp), dateFormatString)}
     </div>
-    <div class="text-red-800">
+    <div class="text-red-800 select-none">
       {logLine.source === CommandLineSource.STDERR ? 'E' : ''}
     </div>
     <div

@@ -1,37 +1,42 @@
 import { appAPI, onNewLogLines } from '$lib/api';
-import { readable } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { Mutex } from 'async-mutex';
 import type { CommandLogLine } from '$lib/types';
 import { debounce } from 'lodash-es';
 
 export function getLogLinesStore(commandId: number, initialCommandLogLines: CommandLogLine[]) {
   console.debug('Created log lines store', commandId);
-  const store = readable(initialCommandLogLines as CommandLogLine[], (set, update) => {
+  let firstLogId = 0;
+
+  const mutex = new Mutex();
+
+  const store = writable(initialCommandLogLines as CommandLogLine[], (set, update) => {
     console.debug('Subscribed to log lines store', commandId);
-    const mutex = new Mutex();
+
     let lastLogId = 0;
 
-    mutex.runExclusive(async () => {
-      const log = await appAPI().getCommandLogLines(commandId);
-      if (log.length > 0) lastLogId = log[log.length - 1].id;
-      set(log);
-    });
+    function updateWithNewLogs() {
+      mutex.runExclusive(async () => {
+        const newLog = await appAPI().getNewerCommandLogLines(commandId, lastLogId);
+        if (newLog.length > 0) {
+          if (firstLogId === 0) firstLogId = newLog[0].id;
+          lastLogId = newLog[newLog.length - 1].id;
+          update((current) => [...current, ...newLog]);
+        }
+      });
+    }
+
+    set(initialCommandLogLines as CommandLogLine[]);
+
+    if (initialCommandLogLines.length > 0) {
+      firstLogId = initialCommandLogLines[0].id;
+      lastLogId = initialCommandLogLines[initialCommandLogLines.length - 1].id;
+      updateWithNewLogs();
+    }
 
     const remove = onNewLogLines(
       commandId,
-      debounce(
-        () => {
-          mutex.runExclusive(async () => {
-            const newLog = await appAPI().getNewerCommandLogLines(commandId, lastLogId);
-            if (newLog.length > 0) {
-              lastLogId = newLog[newLog.length - 1].id;
-              update((current) => [...current, ...newLog]);
-            }
-          });
-        },
-        100,
-        { maxWait: 100 },
-      ),
+      debounce(() => updateWithNewLogs(), 100, { maxWait: 100 }),
     );
 
     return () => {
@@ -40,5 +45,22 @@ export function getLogLinesStore(commandId: number, initialCommandLogLines: Comm
     };
   });
 
-  return store;
+  function loadMore() {
+    console.log('Loading more logs, from', firstLogId)
+    if (!firstLogId) return;
+
+    mutex.runExclusive(async () => {
+      const newLog = await appAPI().getOlderCommandLogLines(commandId, firstLogId);
+      if (newLog.length > 0) {
+        if (firstLogId === 0) firstLogId = newLog[0].id;
+        firstLogId = newLog[0].id;
+        store.update((current) => [...newLog, ...current]);
+      }
+    });
+  }
+
+  return {
+    subscribe: store.subscribe,
+    loadMore,
+  };
 }

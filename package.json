@@ -5,6 +5,7 @@
   "packageManager": "pnpm@8.6.6",
   "scripts": {
     "dev": "cross-env RUST_LOG=\"app=debug\" tauri dev",
+    "dev:trace": "cross-env RUST_LOG=\"app=trace\" tauri dev",
     "dev:ui": "vite dev",
     "build:ui": "vite build",
     "build": "tauri build",

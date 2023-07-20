@@ -16,10 +16,10 @@
 
   $: {
     if (isEditing) {
-      appAPI().setWindowSize(1280, 650);
+      appAPI().setWindowSize(1380, 650);
 
     } else {
-      appAPI().setWindowSize(300, 650);
+      appAPI().setWindowSize(400, 650);
     }
   }
 
@@ -34,7 +34,7 @@
   <div style="grid-area: command-top" class="flex flex-row items-center gap-4 px-4">
     <Button icon="plus" title="Add Command" on:click={onAdd} />
   </div>
-  <div style="grid-area: command-main">
+  <div style="grid-area: command-main" class="overflow-auto">
     {#each data.commands as command}
       <Command {command} />
     {/each}
@@ -51,10 +51,10 @@
     grid:
       'command-top edit-top' 80px
       'command-main edit-main' 1fr
-      / 300px;
+      / 400px;
   }
 
   .editing {
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 400px 1fr;
   }
 </style>

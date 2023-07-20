@@ -107,7 +107,7 @@
   </div>
 
   {#key command.id}
-    <Console logLines={$logLines} />
+    <Console logLines={$logLines} on:load-more={() => logLines.loadMore()} />
   {/key}
 </div>
 
