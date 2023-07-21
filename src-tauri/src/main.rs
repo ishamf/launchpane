@@ -14,7 +14,7 @@ use std::{path::MAIN_SEPARATOR, sync::Arc, vec};
 use errors::{AppCommandError, ClientError};
 use events::{send_command_update_event, AppEventPayload};
 use prisma::*;
-use utils::trace_elapsed_time;
+use utils::{get_midpoint_string, trace_elapsed_time};
 
 use prisma_client_rust::{Direction, QueryError};
 use process::{ProcessManager, ProcessStatus};
@@ -33,7 +33,13 @@ struct AppStateData {
 #[tauri::command]
 #[specta::specta]
 async fn get_commands(state: AppState<'_>) -> Result<Vec<command::Data>, QueryError> {
-    state.client.command().find_many(vec![]).exec().await
+    state
+        .client
+        .command()
+        .find_many(vec![])
+        .order_by(command::order::order(Direction::Asc))
+        .exec()
+        .await
 }
 
 #[tauri::command]
@@ -184,14 +190,83 @@ async fn create_command(
 ) -> Result<command::Data, AppCommandError> {
     let result = state
         .client
-        .command()
-        .create(
-            "".into(),
-            home_dir().unwrap_or("".into()).to_string_lossy().into(),
-            "".into(),
-            vec![],
-        )
-        .exec()
+        ._transaction()
+        .run(|client| async move {
+            let last_command = client
+                .command()
+                .find_first(vec![])
+                .order_by(command::order::order(Direction::Desc))
+                .exec()
+                .await?;
+
+            let last_order = last_command.map(|c| c.order).unwrap_or_else(String::new);
+
+            let result = client
+                .command()
+                .create(
+                    "".into(),
+                    home_dir().unwrap_or("".into()).to_string_lossy().into(),
+                    "".into(),
+                    get_midpoint_string(last_order.as_str(), ""),
+                    vec![],
+                )
+                .exec()
+                .await?;
+
+            Ok::<command::Data, AppCommandError>(result)
+        })
+        .await?;
+
+    send_command_update_event(&app, result.id)?;
+
+    Ok(result)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn move_command_between(
+    state: AppState<'_>,
+    app: AppHandle,
+    command_id: i32,
+    prev_command_id: i32,
+    next_command_id: i32,
+) -> Result<command::Data, AppCommandError> {
+    let result = state
+        .client
+        ._transaction()
+        .run(|client| async move {
+            let res = client
+                ._batch((
+                    client
+                        .command()
+                        .find_unique(command::id::equals(command_id)),
+                    client
+                        .command()
+                        .find_unique(command::id::equals(prev_command_id)),
+                    client
+                        .command()
+                        .find_unique(command::id::equals(next_command_id)),
+                ))
+                .await?;
+
+            if let (Some(_), Some(prev_command), Some(next_command)) = res {
+                let new_order =
+                    get_midpoint_string(prev_command.order.as_str(), next_command.order.as_str());
+
+                let result = client
+                    .command()
+                    .update(
+                        command::id::equals(command_id),
+                        vec![command::order::set(new_order)],
+                    )
+                    .exec()
+                    .await?;
+
+                Ok::<command::Data, AppCommandError>(result)
+            } else {
+                Err(AppCommandError::ClientError(ClientError::CommandNotFound))
+            }
+        })
         .await?;
 
     send_command_update_event(&app, result.id)?;
@@ -261,6 +336,7 @@ fn export_types() {
             get_command,
             set_window_size,
             update_command,
+            move_command_between,
             delete_command,
             get_platform_details,
             get_command_log_lines,
@@ -331,6 +407,7 @@ async fn main() {
             get_command,
             set_window_size,
             update_command,
+            move_command_between,
             delete_command,
             get_platform_details,
             get_command_log_lines,

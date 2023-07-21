@@ -20,6 +20,8 @@ model Command {
 
   command String
 
+  order String @unique
+
   lastRunResultType String?
   lastRunCode       String?
 

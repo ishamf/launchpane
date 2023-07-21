@@ -1,0 +1,7 @@
+---
+source: src/utils.rs
+assertion_line: 94
+expression: "get_midpoint_string(\"abc\", \"abchi\")"
+---
+abcd
+

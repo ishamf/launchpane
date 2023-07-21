@@ -1,0 +1,7 @@
+---
+source: src/utils.rs
+assertion_line: 95
+expression: "get_midpoint_string(\"\", \"\")"
+---
+n
+

@@ -1,9 +1,0 @@
--- CreateTable
-CREATE TABLE "CommandLogLine" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "commandId" INTEGER NOT NULL,
-    "source" INTEGER NOT NULL,
-    "line" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "CommandLogLine_commandId_fkey" FOREIGN KEY ("commandId") REFERENCES "Command" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
