@@ -59,7 +59,8 @@
         "height": 600,
         "resizable": true,
         "title": "Launchpane",
-        "width": 800
+        "width": 800,
+        "fileDropEnabled": false
       }
     ]
   }

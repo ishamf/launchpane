@@ -14,6 +14,7 @@ use std::{path::MAIN_SEPARATOR, sync::Arc, vec};
 use errors::{AppCommandError, ClientError};
 use events::{send_command_update_event, AppEventPayload};
 use prisma::*;
+use tokio::join;
 use utils::{get_midpoint_string, trace_elapsed_time};
 
 use prisma_client_rust::{Direction, QueryError};
@@ -228,44 +229,74 @@ async fn move_command_between(
     state: AppState<'_>,
     app: AppHandle,
     command_id: i32,
-    prev_command_id: i32,
-    next_command_id: i32,
+    prev_command_id: Option<i32>,
+    next_command_id: Option<i32>,
 ) -> Result<command::Data, AppCommandError> {
     let result = state
         .client
         ._transaction()
         .run(|client| async move {
-            let res = client
-                ._batch((
-                    client
-                        .command()
-                        .find_unique(command::id::equals(command_id)),
-                    client
-                        .command()
-                        .find_unique(command::id::equals(prev_command_id)),
-                    client
-                        .command()
-                        .find_unique(command::id::equals(next_command_id)),
-                ))
+            let command = client
+                .command()
+                .find_unique(command::id::equals(command_id))
+                .exec();
+            let prev_command = async {
+                match prev_command_id {
+                    Some(id) => {
+                        client
+                            .command()
+                            .find_unique(command::id::equals(id))
+                            .exec()
+                            .await
+                    }
+                    None => Ok(None),
+                }
+            };
+            let next_command = async {
+                match next_command_id {
+                    Some(id) => {
+                        client
+                            .command()
+                            .find_unique(command::id::equals(id))
+                            .exec()
+                            .await
+                    }
+                    None => Ok(None),
+                }
+            };
+
+            let (command, prev_command, next_command) = join!(command, prev_command, next_command);
+
+            let new_order = match (
+                command?,
+                prev_command_id,
+                prev_command?,
+                next_command_id,
+                next_command?,
+            ) {
+                (Some(_), _, Some(prev_command), None, None) => {
+                    Ok(get_midpoint_string(prev_command.order.as_str(), ""))
+                }
+                (Some(_), _, None, None, Some(next_command)) => {
+                    Ok(get_midpoint_string("", next_command.order.as_str()))
+                }
+                (Some(_), _, Some(prev_command), _, Some(next_command)) => Ok(get_midpoint_string(
+                    prev_command.order.as_str(),
+                    next_command.order.as_str(),
+                )),
+                _ => Err(AppCommandError::ClientError(ClientError::CommandNotFound)),
+            }?;
+
+            let result = client
+                .command()
+                .update(
+                    command::id::equals(command_id),
+                    vec![command::order::set(new_order)],
+                )
+                .exec()
                 .await?;
 
-            if let (Some(_), Some(prev_command), Some(next_command)) = res {
-                let new_order =
-                    get_midpoint_string(prev_command.order.as_str(), next_command.order.as_str());
-
-                let result = client
-                    .command()
-                    .update(
-                        command::id::equals(command_id),
-                        vec![command::order::set(new_order)],
-                    )
-                    .exec()
-                    .await?;
-
-                Ok::<command::Data, AppCommandError>(result)
-            } else {
-                Err(AppCommandError::ClientError(ClientError::CommandNotFound))
-            }
+            Ok::<command::Data, AppCommandError>(result)
         })
         .await?;
 

@@ -26,12 +26,15 @@
 </script>
 
 <a
-  class="flex m-4 border border-zinc-300 bg-zinc-50 hover:bg-zinc-100 transition-colors rounded-md items-center"
+  class="flex border border-zinc-300 bg-zinc-50 hover:bg-zinc-100 transition-colors rounded-md items-center"
   class:font-mono={showCommandTitleWithMonospace(command)}
   class:selected={selectedCommand === command.id}
   class:deemphasize={selectedCommand && selectedCommand !== command.id}
   class:running={$commandStatus === 'Running'}
   class:stopping={$commandStatus === 'Stopping'}
+  draggable
+  on:dragstart
+  on:dragend
   href={`/command/${command.id}`}
 >
   <div class="flex flex-col flex-1 min-w-0 pl-4 gap-2">
@@ -79,6 +82,6 @@
 
 <style lang="postcss">
   .selected {
-    @apply border-zinc-500;
+    @apply border-zinc-400;
   }
 </style>
