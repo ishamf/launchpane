@@ -202,6 +202,20 @@ impl ProcessManager {
 
             debug!("Created kill command log line");
 
+            self.db_client
+                .command()
+                .update(
+                    command::id::equals(command_id),
+                    vec![
+                        command::last_run_result_type::set(Some("killed".into())),
+                        command::last_run_code::set(None),
+                    ],
+                )
+                .exec()
+                .await?;
+
+            debug!("Updated last run result");
+
             self.stopping_commands
                 .lock()
                 .await
@@ -361,6 +375,19 @@ impl ProcessManager {
                     .await?;
 
                 debug!("Created exit command log line");
+
+                db.command()
+                    .update(
+                        command::id::equals(command.id),
+                        vec![
+                            command::last_run_result_type::set(Some("exit".into())),
+                            command::last_run_code::set(status.code().map(|c| c.to_string())),
+                        ],
+                    )
+                    .exec()
+                    .await?;
+
+                debug!("Updated last run result");
 
                 send_command_log_update_event(&app_handle, command.id)?;
                 send_command_update_event(&app_handle, command.id)?;

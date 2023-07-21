@@ -39,9 +39,12 @@
       {command.name || getCommandDescriptor(command)}
     </span>
     <div class="flex flex-row gap-2">
-      <ActivityLight 
+      <ActivityLight
         green={$commandStatus === 'Running'}
         yellow={$commandStatus === 'Stopping'}
+        red={$commandStatus === 'Stopped' &&
+          command.lastRunResultType === 'exit' &&
+          command.lastRunCode !== '0'}
       />
       <ActivityLight green={$recentActivity && $commandStatus === 'Running'} />
     </div>
