@@ -9,16 +9,14 @@ mod events;
 mod process;
 mod utils;
 
-use std::{env::set_current_dir, fs::create_dir_all, path::MAIN_SEPARATOR, sync::Arc, vec};
+use std::{path::MAIN_SEPARATOR, sync::Arc, vec};
 
 use errors::{AppCommandError, ClientError};
 use events::{send_command_update_event, AppEventPayload};
-use log::info;
 use prisma::*;
 use tokio::join;
 use utils::{get_midpoint_string, trace_elapsed_time};
 
-use directories::ProjectDirs;
 use prisma_client_rust::{Direction, QueryError};
 use process::{ProcessManager, ProcessStatus};
 use serde::Serialize;
@@ -396,6 +394,27 @@ fn export_types_runner() {
     export_types();
 }
 
+#[cfg(not(debug_assertions))]
+mod live {
+    use std::{env::set_current_dir, fs::create_dir_all};
+
+    use directories::ProjectDirs;
+    use log::info;
+
+    pub fn use_data_dir() {
+        let project_dirs = ProjectDirs::from("com", "Adimaja", "launchpane")
+            .expect("Project dirs should be available");
+
+        let data_dir = project_dirs.data_local_dir();
+
+        info!("Using {} as data dir", data_dir.to_string_lossy());
+
+        create_dir_all(data_dir).expect("Should be able to create data dir");
+
+        set_current_dir(data_dir).expect("Should be able to access data dir");
+    }
+}
+
 #[tokio::main]
 async fn main() {
     tauri::async_runtime::set(tokio::runtime::Handle::current());
@@ -405,16 +424,8 @@ async fn main() {
     #[cfg(debug_assertions)]
     export_types();
 
-    let project_dirs =
-        ProjectDirs::from("com", "Adimaja", "launchpane").expect("Project dirs should be available");
-
-    let data_dir = project_dirs.data_local_dir();
-
-    info!("Using {} as data dir", data_dir.to_string_lossy());
-
-    create_dir_all(data_dir).expect("Should be able to create data dir");
-
-    set_current_dir(data_dir).expect("Should be able to access data dir");
+    #[cfg(not(debug_assertions))]
+    live::use_data_dir();
 
     let db_client: PrismaClient = PrismaClient::_builder()
         .with_url("file:./app.db?connection_limit=1".into())
@@ -430,7 +441,12 @@ async fn main() {
     tauri::Builder::default()
         .setup(|app| {
             #[cfg(debug_assertions)]
-            app.get_window("main").unwrap().open_devtools();
+            {
+                let window = app.get_window("main").unwrap();
+
+                window.open_devtools();
+                window.set_title("Launchpane (Dev)")?;
+            }
 
             let client_arc = Arc::new(db_client);
 

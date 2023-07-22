@@ -7,7 +7,7 @@
     "distDir": "../public"
   },
   "package": {
-    "productName": "launchpane",
+    "productName": "Launchpane",
     "version": "0.1.0"
   },
   "tauri": {
