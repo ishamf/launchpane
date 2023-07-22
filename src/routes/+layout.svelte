@@ -7,6 +7,7 @@
   import { appAPI } from '$lib/api';
   import Command from '$lib/components/Command.svelte';
   import Button from '$lib/components/Button.svelte';
+  import { flip } from 'svelte/animate';
 
   export let data: LayoutData;
 
@@ -38,12 +39,13 @@
     <Button icon="plus" title="Add Command" on:click={onAdd} />
   </div>
   <div style="grid-area: command-main" class="overflow-auto">
-    {#each data.commands as command, commandIndex}
-      <div class="relative py-2 px-4">
+    {#each data.commands as command, commandIndex (command.id)}
+      <div class="relative py-2 px-4" animate:flip={{ duration: 200 }}>
         <div
           class="transition-transform"
           class:-translate-y-2={currentHoveredDropTargets[0] === command.id}
           class:translate-y-2={currentHoveredDropTargets[1] === command.id}
+          class:opacity-25={draggingId === command.id}
         >
           <Command
             {command}
@@ -52,6 +54,9 @@
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.dropEffect = 'move';
                 e.dataTransfer.setData('text/plain', `${command.id}`);
+                if (e.target instanceof Element) {
+                  e.dataTransfer.setDragImage(e.target, 0, 0);
+                }
               }
 
               draggingId = command.id;

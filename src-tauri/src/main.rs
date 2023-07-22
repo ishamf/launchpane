@@ -274,10 +274,11 @@ async fn move_command_between(
                 next_command_id,
                 next_command?,
             ) {
+                // It's only ok to have no prev or next command if the ID is also not specified
                 (Some(_), _, Some(prev_command), None, None) => {
                     Ok(get_midpoint_string(prev_command.order.as_str(), ""))
                 }
-                (Some(_), _, None, None, Some(next_command)) => {
+                (Some(_), None, None, _, Some(next_command)) => {
                     Ok(get_midpoint_string("", next_command.order.as_str()))
                 }
                 (Some(_), _, Some(prev_command), _, Some(next_command)) => Ok(get_midpoint_string(
