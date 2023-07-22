@@ -27,7 +27,6 @@
 
 <a
   class="flex border border-zinc-300 bg-zinc-50 hover:bg-zinc-100 transition-colors rounded-md items-center"
-  class:font-mono={showCommandTitleWithMonospace(command)}
   class:selected={selectedCommand === command.id}
   class:deemphasize={selectedCommand && selectedCommand !== command.id}
   class:running={$commandStatus === 'Running'}
@@ -38,7 +37,10 @@
   href={`/command/${command.id}`}
 >
   <div class="flex flex-col flex-1 min-w-0 pl-4 gap-2">
-    <span class="whitespace-nowrap text-ellipsis overflow-hidden">
+    <span
+      class="whitespace-nowrap text-ellipsis overflow-hidden"
+      class:font-mono={showCommandTitleWithMonospace(command)}
+    >
       {command.name || getCommandDescriptor(command)}
     </span>
     <div class="flex flex-row gap-2">
@@ -48,8 +50,10 @@
         red={$commandStatus === 'Stopped' &&
           command.lastRunResultType === 'exit' &&
           command.lastRunCode !== '0'}
+        text="PWR"
+        transition
       />
-      <ActivityLight green={$recentActivity && $commandStatus === 'Running'} />
+      <ActivityLight green={$recentActivity && $commandStatus === 'Running'} text="ACT" />
     </div>
   </div>
 
