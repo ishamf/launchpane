@@ -31,11 +31,27 @@ use crate::{
     prisma::{_prisma::PrismaClient, command},
 };
 
-enum CommandLineSource {
+
+enum CommandLogLineSource {
     STDOUT = 1,
     STDERR = 2,
-
     INFO = 3,
+}
+
+enum LastRunResultType {
+    Exit,
+    Killed,
+    Error,
+}
+
+impl LastRunResultType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LastRunResultType::Exit => "exit",
+            LastRunResultType::Killed => "killed",
+            LastRunResultType::Error => "error",
+        }
+    }
 }
 
 fn timestamp() -> Result<f64, SystemTimeError> {
@@ -192,7 +208,7 @@ impl ProcessManager {
                 .command_log_line()
                 .create(
                     command::id::equals(command_id),
-                    CommandLineSource::INFO as i32,
+                    CommandLogLineSource::INFO as i32,
                     command_killed_log,
                     timestamp()?,
                     vec![],
@@ -207,7 +223,7 @@ impl ProcessManager {
                 .update(
                     command::id::equals(command_id),
                     vec![
-                        command::last_run_result_type::set(Some("killed".into())),
+                        command::last_run_result_type::set(Some(LastRunResultType::Killed.as_str().into())),
                         command::last_run_code::set(None),
                     ],
                 )
@@ -270,7 +286,42 @@ impl ProcessManager {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        let mut child = cmd.spawn()?;
+        let child = cmd.spawn();
+
+        if let Err(spawn_error) = child {
+            let error_message = format!("Command failed to start: {}", spawn_error);
+
+            self.db_client
+                .command_log_line()
+                .create(
+                    command::id::equals(command.id),
+                    CommandLogLineSource::INFO as i32,
+                    error_message,
+                    timestamp()?,
+                    vec![],
+                )
+                .exec()
+                .await?;
+
+            self.db_client
+                .command()
+                .update(
+                    command::id::equals(command.id),
+                    vec![
+                        command::last_run_result_type::set(Some(LastRunResultType::Error.as_str().into())),
+                        command::last_run_code::set(None),
+                    ],
+                )
+                .exec()
+                .await?;
+
+            send_command_log_update_event(&self.app_handle, command.id)?;
+            send_command_update_event(&self.app_handle, command.id)?;
+
+            return Ok(());
+        };
+
+        let mut child = child.expect("Spawn errors to already be handled");
 
         let out_process = {
             let db = Arc::clone(&self.db_client);
@@ -284,7 +335,7 @@ impl ProcessManager {
                     db.command_log_line()
                         .create(
                             command::id::equals(command.id),
-                            CommandLineSource::STDOUT as i32,
+                            CommandLogLineSource::STDOUT as i32,
                             line,
                             timestamp()?,
                             vec![],
@@ -313,7 +364,7 @@ impl ProcessManager {
                     db.command_log_line()
                         .create(
                             command::id::equals(command.id),
-                            CommandLineSource::STDERR as i32,
+                            CommandLogLineSource::STDERR as i32,
                             line,
                             timestamp()?,
                             vec![],
@@ -370,7 +421,7 @@ impl ProcessManager {
                 db.command_log_line()
                     .create(
                         command::id::equals(command.id),
-                        CommandLineSource::INFO as i32,
+                        CommandLogLineSource::INFO as i32,
                         command_exit_log,
                         timestamp()?,
                         vec![],
@@ -384,7 +435,7 @@ impl ProcessManager {
                     .update(
                         command::id::equals(command.id),
                         vec![
-                            command::last_run_result_type::set(Some("exit".into())),
+                            command::last_run_result_type::set(Some(LastRunResultType::Exit.as_str().into())),
                             command::last_run_code::set(status.code().map(|c| c.to_string())),
                         ],
                     )
@@ -416,7 +467,7 @@ impl ProcessManager {
             .command_log_line()
             .create(
                 command::id::equals(command.id),
-                CommandLineSource::INFO as i32,
+                CommandLogLineSource::INFO as i32,
                 start_command_log,
                 timestamp()?,
                 vec![],

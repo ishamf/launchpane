@@ -48,8 +48,8 @@
         green={$commandStatus === 'Running'}
         yellow={$commandStatus === 'Stopping'}
         red={$commandStatus === 'Stopped' &&
-          command.lastRunResultType === 'exit' &&
-          command.lastRunCode !== '0'}
+          ((command.lastRunResultType === 'exit' && command.lastRunCode !== '0') ||
+            command.lastRunResultType === 'error')}
         text="PWR"
         transition
       />

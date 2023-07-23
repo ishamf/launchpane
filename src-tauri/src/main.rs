@@ -382,11 +382,12 @@ fn export_types() {
     )
     .unwrap();
 
-    // Export custom events
+    // Export custom types
+    let types = vec![
+        specta::ts::export::<AppEventPayload>(&Default::default()).unwrap(),
+    ];
 
-    let app_event_type = specta::ts::export::<AppEventPayload>(&Default::default()).unwrap();
-
-    std::fs::write("../src/lib/generated/events.ts", app_event_type).unwrap();
+    std::fs::write("../src/lib/generated/data.ts", types.join("\n")).unwrap();
 }
 
 #[test]
