@@ -234,7 +234,7 @@ impl ProcessManager {
 
     pub async fn run_process(&self, command: command::Data) -> Result<(), AppCommandError> {
         #[cfg(target_family = "windows")]
-        let mut cmd = if cfg!(target_family = "windows") {
+        let mut cmd = 
             // Powershell is significantly slower, but you have to use it to run commands on
             // these kinds of paths
             if command.cwd.starts_with("\\\\") {
@@ -255,8 +255,8 @@ impl ProcessManager {
                 cmd.creation_flags(CREATE_NO_WINDOW);
 
                 cmd
-            }
-        };
+            };
+        
 
         #[cfg(target_family = "unix")]
         let mut cmd = {
