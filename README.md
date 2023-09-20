@@ -5,7 +5,7 @@ Simple GUI command runner. Created using [SvelteKit](https://kit.svelte.dev/) an
 - Run short or long-running commands.
 - Keep track of the log output.
 
-https://github.com/ishamf/launchpane/assets/3515649/e3af9242-33ca-4c64-98b1-201de3062ee5
+https://github.com/ishamf/launchpane/assets/3515649/7137a373-bc17-47e3-beac-f512c30b4e0a
 
 ## Requirements
 
