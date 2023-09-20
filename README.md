@@ -1,6 +1,6 @@
 # Launchpane
 
-Simple GUI command runner.
+Simple GUI command runner. Created using [SvelteKit](https://kit.svelte.dev/) and [Tauri](https://tauri.app/).
 
 - Run short or long-running commands.
 - Keep track of the log output.
